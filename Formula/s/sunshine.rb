@@ -5,12 +5,13 @@ class Sunshine < Formula
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
     tag: "v0.23.1"
-  version "0.23.1"
   license all_of: ["GPL-3.0-only"]
-  head "https://github.com/LizardByte/Sunshine.git", branch: "nightly"
+  head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
   depends_on "boost" => :build
   depends_on "cmake" => :build
+  depends_on "doxygen" => :build
+  depends_on "graphviz" => :build # for `dot`
   depends_on "node" => :build
   depends_on "pkg-config" => :build
   depends_on "curl"
@@ -20,8 +21,14 @@ class Sunshine < Formula
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v0.23.1"
-    ENV["COMMIT"] = "8b21db64fb8e8ffb9c24a412dbc66b7410699211"
+    ENV["BUILD_VERSION"] = "v#{version}"
+    if build.head?
+      # For a HEAD build, the `version` field will be something like "HEAD-59ff5dc". This works
+      # fine itself as a value for BUILD_VERSION. Sticking a "v" prefix in front of this value
+      # would look ugly, so we'll remove the prefix.
+      ENV["BUILD_VERSION"] = ENV["BUILD_VERSION"][1..]
+    end
+    ENV["COMMIT"] = `git rev-parse HEAD`.strip
 
     args = %W[
       -DBUILD_WERROR=ON
