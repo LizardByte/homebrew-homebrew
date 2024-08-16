@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2024.816.224131"
-  version "2024.816.224131"
+    tag: "v2024.816.233232"
+  version "2024.816.233232"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -60,8 +60,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2024.816.224131"
-    ENV["COMMIT"] = "7c4c905f0433c51a7f7d04ff9bfe19215b508898"
+    ENV["BUILD_VERSION"] = "v2024.816.233232"
+    ENV["COMMIT"] = "c8d0d2b6157058a597ac34e85d3f58db661d64bf"
 
     args = %W[
       -DBUILD_WERROR=ON
