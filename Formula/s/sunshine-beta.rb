@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2024.1012.23333"
-  version "2024.1012.23333"
+    tag: "v2024.1012.35905"
+  version "2024.1012.35905"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -22,7 +22,7 @@ class SunshineBeta < Formula
     end
   end
 
-  option "with-docs-off", "Disable docs"
+  option "with-docs", "Enable docs"
   option "with-dynamic-boost", "Dynamically link Boost libraries"
   option "without-dynamic-boost", "Statically link Boost libraries" # default option
 
@@ -60,8 +60,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2024.1012.23333"
-    ENV["COMMIT"] = "e0743169be37691e9b83ba1c4fc2b4e54556339a"
+    ENV["BUILD_VERSION"] = "v2024.1012.35905"
+    ENV["COMMIT"] = "7dd836dab63e15db54f18ed2b64cb394aa30c308"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -76,12 +76,12 @@ class SunshineBeta < Formula
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
 
-    if build.with? "docs-off"
-      ohai "Building docs: disabled"
-      args << "-DBUILD_DOCS=OFF"
-    else
+    if build.with? "docs"
       ohai "Building docs: enabled"
       args << "-DBUILD_DOCS=ON"
+    else
+      ohai "Building docs: disabled"
+      args << "-DBUILD_DOCS=OFF"
     end
 
     if build.without? "dynamic-boost"
