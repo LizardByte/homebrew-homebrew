@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2024.1012.153525"
-  version "2024.1012.153525"
+    tag: "v2024.1012.170838"
+  version "2024.1012.170838"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -23,8 +23,8 @@ class SunshineBeta < Formula
   end
 
   option "with-docs", "Enable docs"
-  option "with-dynamic-boost", "Dynamically link Boost libraries"
-  option "without-dynamic-boost", "Statically link Boost libraries" # default option
+  option "with-static-boost", "Enable static link of Boost libraries"
+  option "without-static-boost", "Disable static link of Boost libraries" # default option
 
   depends_on "cmake" => :build
   depends_on "doxygen" => :build
@@ -35,6 +35,7 @@ class SunshineBeta < Formula
   depends_on "miniupnpc"
   depends_on "openssl"
   depends_on "opus"
+  depends_on "boost" => :recommended
   depends_on "icu4c" => :recommended
 
   on_linux do
@@ -60,8 +61,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2024.1012.153525"
-    ENV["COMMIT"] = "50261bf5ee9a870271499b78618c4c31e14603a6"
+    ENV["BUILD_VERSION"] = "v2024.1012.170838"
+    ENV["COMMIT"] = "25ed2d5b4a5bde402bc573b5dd1c8479757a9735"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -84,14 +85,17 @@ class SunshineBeta < Formula
       args << "-DBUILD_DOCS=OFF"
     end
 
-    if build.without? "dynamic-boost"
+    if build.without? "static-boost"
+      args << "-DBOOST_USE_STATIC=OFF"
+      ohai "Disabled statically linking Boost libraries"
+    else
       args << "-DBOOST_USE_STATIC=ON"
-      ohai "Statically linking Boost libraries"
+      ohai "Enabled statically linking Boost libraries"
 
       unless Formula["icu4c"].any_version_installed?
         odie <<~EOS
           icu4c must be installed to link against static Boost libraries,
-          either install icu4c or use brew install sunshine --with-dynamic-boost instead
+          either install icu4c or use brew install sunshine --with-static-boost instead
         EOS
       end
       ENV.append "CXXFLAGS", "-I#{Formula["icu4c"].opt_include}"
@@ -99,9 +103,6 @@ class SunshineBeta < Formula
       ENV.append "LDFLAGS", "-L#{icu4c_lib_path}"
       ENV["LIBRARY_PATH"] = icu4c_lib_path
       ohai "Linking against ICU libraries at: #{icu4c_lib_path}"
-    else
-      args << "-DBOOST_USE_STATIC=OFF"
-      ohai "Dynamically linking Boost libraries"
     end
 
     system "cmake", "-S", ".", "-B", "build", *std_cmake_args, *args
