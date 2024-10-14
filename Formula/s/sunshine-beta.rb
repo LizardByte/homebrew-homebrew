@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2024.1014.174747"
-  version "2024.1014.174747"
+    tag: "v2024.1014.222855"
+  version "2024.1014.222855"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -61,8 +61,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2024.1014.174747"
-    ENV["COMMIT"] = "67ab6e3c79770c6c31a3e93f68d41ab10d77903b"
+    ENV["BUILD_VERSION"] = "v2024.1014.222855"
+    ENV["COMMIT"] = "7352e7277a65d8f18cfe2b1669873ae9af933605"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -104,6 +104,8 @@ class SunshineBeta < Formula
       ENV["LIBRARY_PATH"] = icu4c_lib_path
       ohai "Linking against ICU libraries at: #{icu4c_lib_path}"
     end
+
+    args << "-DCUDA_FAIL_ON_MISSING=OFF" if OS.linux?
 
     system "cmake", "-S", ".", "-B", "build", *std_cmake_args, *args
 
