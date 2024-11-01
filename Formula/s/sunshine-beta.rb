@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2024.1031.235235"
-  version "2024.1031.235235"
+    tag: "v2024.1101.144159"
+  version "2024.1101.144159"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -60,8 +60,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2024.1031.235235"
-    ENV["COMMIT"] = "f418566b3123eca4a426e5c57bf8bf7d9293a3db"
+    ENV["BUILD_VERSION"] = "v2024.1101.144159"
+    ENV["COMMIT"] = "9662f0547f116bdd6870ec7c8ab246e95572585f"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -114,6 +114,9 @@ class SunshineBeta < Formula
 
       bin.install "tests/test_sunshine"
     end
+
+    # codesign the binary on intel macs
+    system "codesign", "-s", "-", "--force", "--deep", bin/"sunshine" if OS.mac? && Hardware::CPU.intel?
 
     bin.install "src_assets/linux/misc/postinst" if OS.linux?
   end
