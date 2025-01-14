@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.114.15413"
-  version "2025.114.15413"
+    tag: "v2025.114.33454"
+  version "2025.114.33454"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -60,8 +60,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2025.114.15413"
-    ENV["COMMIT"] = "a7f64118a89ca40cba93be72ec276c9c30fbcb88"
+    ENV["BUILD_VERSION"] = "v2025.114.33454"
+    ENV["COMMIT"] = "820180c9e771980aa58789de0fdcdace97500db7"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -130,7 +130,7 @@ class SunshineBeta < Formula
       Thanks for installing Sunshine!
 
       To get started, review the documentation at:
-        https://docs.lizardbyte.dev/projects/sunshine/en/latest/
+        https://docs.lizardbyte.dev/projects/sunshine
     EOS
 
     if OS.linux?
