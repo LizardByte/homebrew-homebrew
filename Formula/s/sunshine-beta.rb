@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.501.153943"
-  version "2025.501.153943"
+    tag: "v2025.503.182213"
+  version "2025.503.182213"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -201,8 +201,8 @@ index 5b3638d..aca9481 100644
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2025.501.153943"
-    ENV["COMMIT"] = "8ef838bada7f6c361fb1e81d7423644ed442f944"
+    ENV["BUILD_VERSION"] = "v2025.503.182213"
+    ENV["COMMIT"] = "a70cf5e12ec610999b1979442e0bca120c6ac179"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -351,6 +351,7 @@ index 5b3638d..aca9481 100644
     system bin/"sunshine", "--version"
 
     # run the test suite
-    system bin/"test_sunshine", "--gtest_color=yes"
+    system bin/"test_sunshine", "--gtest_color=yes", "--gtest_output=xml:test_results.xml"
+    assert_path_exists testpath/"test_results.xml"
   end
 end
