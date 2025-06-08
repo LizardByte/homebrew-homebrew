@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.607.224028"
-  version "2025.607.224028"
+    tag: "v2025.608.12928"
+  version "2025.608.12928"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -33,7 +33,6 @@ class SunshineBeta < Formula
   depends_on "node" => :build
   depends_on "pkg-config" => :build
   depends_on "curl"
-  depends_on "miniupnpc"
   depends_on "openssl"
   depends_on "opus"
   depends_on "icu4c" => :recommended
@@ -199,10 +198,15 @@ index 5b3638d..aca9481 100644
     end
   end
 
+  resource "miniupnpc" do
+    url "https://github.com/miniupnp/miniupnp.git",
+      revision: "e263ab6f56c382e10fed31347ec68095d691a0e8"
+  end
+
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2025.607.224028"
-    ENV["COMMIT"] = "eaa434ab45ac2cfba1012019fbdb8ff20ee54365"
+    ENV["BUILD_VERSION"] = "v2025.608.12928"
+    ENV["COMMIT"] = "0a98094613d8e9ee2c0759e6042197d675e9e474"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -299,6 +303,23 @@ index 5b3638d..aca9481 100644
         system "ninja", "-C", "build"
         system "ninja", "-C", "build", "install"
       end
+    end
+
+    # Build miniupnpc
+    resource("miniupnpc").stage do
+      # Change to the miniupnpc directory within the repo
+      cd "miniupnpc" do
+        system "make", "INSTALLPREFIX=#{prefix}/miniupnpc", "install"
+      end
+
+      # Copy the shared libraries to the main lib directory
+      # This ensures they're in the library search path at runtime
+      cp Dir["#{prefix}/miniupnpc/lib/libminiupnpc.so*"], "#{lib}/" if OS.linux?
+
+      # Set include and library paths for the custom miniupnpc
+      ENV.prepend_path "PKG_CONFIG_PATH", "#{prefix}/miniupnpc/lib/pkgconfig"
+      ENV.prepend "CPPFLAGS", "-I#{prefix}/miniupnpc/include"
+      ENV.prepend "LDFLAGS", "-L#{prefix}/miniupnpc/lib"
     end
 
     system "cmake", "-S", ".", "-B", "build", "-G", "Unix Makefiles",
