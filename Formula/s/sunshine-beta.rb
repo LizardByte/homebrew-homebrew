@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.621.194159"
-  version "2025.621.194159"
+    tag: "v2025.621.203042"
+  version "2025.621.203042"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -201,8 +201,8 @@ index 5b3638d..aca9481 100644
 
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "v2025.621.194159"
-    ENV["COMMIT"] = "8e061c44c541980d362242c7cbbdeed40dd32536"
+    ENV["BUILD_VERSION"] = "v2025.621.203042"
+    ENV["COMMIT"] = "fb51c2c649c9f57f877c34725b191bb1035bc5e0"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -319,31 +319,31 @@ index 5b3638d..aca9481 100644
     run [opt_bin/"sunshine", "~/.config/sunshine/sunshine.conf"]
   end
 
-  def caveats
-    caveats_message = <<~EOS
-      Thanks for installing Sunshine!
-
-      To get started, review the documentation at:
-        https://docs.lizardbyte.dev/projects/sunshine
-    EOS
-
+  def post_install
     if OS.linux?
-      caveats_message += <<~EOS
+      opoo <<~EOS
         ATTENTION: To complete installation, you must run the following command:
         `sudo #{bin}/postinst`
       EOS
     end
 
     if OS.mac?
-      caveats_message += <<~EOS
+      opoo <<~EOS
         Sunshine can only access microphones on macOS due to system limitations.
         To stream system audio use "Soundflower" or "BlackHole".
 
         Gamepads are not currently supported on macOS.
       EOS
     end
+  end
 
-    caveats_message
+  def caveats
+    <<~EOS
+      Thanks for installing Sunshine!
+
+      To get started, review the documentation at:
+        https://docs.lizardbyte.dev/projects/sunshine
+    EOS
   end
 
   test do
