@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.806.175625"
-  version "2025.806.175625"
+    tag: "v2025.814.134100"
+  version "2025.814.134100"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -37,6 +37,10 @@ class SunshineBeta < Formula
   depends_on "opus"
   depends_on "icu4c" => :recommended
 
+  on_macos do
+    depends_on xcode: ["15.3", :build]
+  end
+
   on_linux do
     depends_on "avahi"
     depends_on "libayatana-appindicator"
@@ -59,10 +63,20 @@ class SunshineBeta < Formula
     depends_on "wayland"
   end
 
+  fails_with :clang do
+    build 1400
+    cause "Requires C++23 support"
+  end
+
+  fails_with :gcc do
+    version "12" # fails with GCC 12.x and earlier
+    cause "Requires C++23 support"
+  end
+
   def install
     ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "2025.806.175625"
-    ENV["COMMIT"] = "4503fea7fbc5cc5ae5aa1de10716f54de948af0e"
+    ENV["BUILD_VERSION"] = "2025.814.134100"
+    ENV["COMMIT"] = "5a83b7a7d47252985eab8d139fc9e5df1b8f6ca6"
 
     args = %W[
       -DBUILD_WERROR=ON
