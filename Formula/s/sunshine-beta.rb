@@ -5,8 +5,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.829.135256"
-  version "2025.829.135256"
+    tag: "v2025.919.171254"
+  version "2025.919.171254"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -43,6 +43,7 @@ class SunshineBeta < Formula
 
   on_linux do
     depends_on "avahi"
+    depends_on "gnu-which"
     depends_on "libayatana-appindicator"
     depends_on "libcap"
     depends_on "libdrm"
@@ -74,9 +75,9 @@ class SunshineBeta < Formula
   end
 
   def install
-    ENV["BRANCH"] = "master"
-    ENV["BUILD_VERSION"] = "2025.829.135256"
-    ENV["COMMIT"] = "a3da5edb68b61a39935054f86e70e4bdf068ae61"
+    ENV["BRANCH"] = ""
+    ENV["BUILD_VERSION"] = "2025.919.171254"
+    ENV["COMMIT"] = "0f984d0e614e34ed10286e566cbea10259afcd5f"
 
     args = %W[
       -DBUILD_WERROR=ON
@@ -120,7 +121,6 @@ class SunshineBeta < Formula
     end
 
     args << "-DCUDA_FAIL_ON_MISSING=OFF" if OS.linux?
-    args << "-DSUNSHINE_ENABLE_TRAY=OFF" if OS.mac?
 
     system "cmake", "-S", ".", "-B", "build", "-G", "Unix Makefiles",
             *std_cmake_args,
