@@ -5,8 +5,8 @@ class Sunshine < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.923.33222"
-  version "2025.923.33222"
+    tag: "v2025.924.154138"
+  version "2025.924.154138"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -36,10 +36,6 @@ class Sunshine < Formula
   depends_on "openssl"
   depends_on "opus"
   depends_on "icu4c" => :recommended
-
-  on_macos do
-    depends_on xcode: ["15.3", :build]
-  end
 
   on_linux do
     depends_on "avahi"
@@ -76,8 +72,8 @@ class Sunshine < Formula
 
   def install
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2025.923.33222"
-    ENV["COMMIT"] = "f22b00d6981f756d3531fba0028723d4a5065824"
+    ENV["BUILD_VERSION"] = "2025.924.154138"
+    ENV["COMMIT"] = "86188d47a7463b0f73b35de18a628353adeaa20e"
 
     args = %W[
       -DBUILD_WERROR=ON
