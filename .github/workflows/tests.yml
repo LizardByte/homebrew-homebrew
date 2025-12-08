@@ -1,0 +1,104 @@
+---
+name: brew test-bot
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  test-bot:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-22.04
+          - macos-14
+          - macos-15
+          - macos-26
+    runs-on: ${{ matrix.os }}
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      packages: read
+      pull-requests: read
+    steps:
+      - name: More space
+        if: runner.os == 'Linux'
+        uses: LizardByte/actions/actions/more_space@v2025.1028.23217
+        with:
+          analyze-space-savings: true
+          clean-all: true
+          safe-packages: brew
+
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+        with:
+          stable: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Homebrew Bundler RubyGems
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+          key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: ${{ matrix.os }}-rubygems-
+
+      - name: Brew cleanup before
+        run: brew test-bot --fail-fast --only-cleanup-before
+
+      - name: Brew setup
+        run: brew test-bot --fail-fast --only-setup
+
+      - name: Check syntax
+        run: brew test-bot --fail-fast --only-tap-syntax
+
+      - name: Base64-encode GITHUB_TOKEN for HOMEBREW_DOCKER_REGISTRY_TOKEN
+        id: base64-encode
+        if: github.event_name == 'pull_request'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          base64_token=$(echo -n "${TOKEN}" | base64 | tr -d "\n")
+          echo "::add-mask::${base64_token}"
+          echo "token=${base64_token}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build bottles
+        if: github.event_name == 'pull_request'
+        env:
+          HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
+        run: brew test-bot --fail-fast --only-formulae --root-url=https://ghcr.io/v2/lizardbyte/homebrew
+
+      - name: Upload bottles as artifact
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: bottles_${{ matrix.os }}
+          path: '*.bottle.*'
+
+  auto-approve-lizardbyte-bot:
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login == 'LizardByte-bot'
+    needs: test-bot
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Label PR with pr-pull
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['pr-pull']
+            });
