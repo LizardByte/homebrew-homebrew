@@ -1,0 +1,104 @@
+---
+name: Homebrew Installation Issue
+description: Report an issue with installing a Formula from this tap.
+body:
+  - type: markdown
+    attributes:
+      value: >
+        **THIS IS NOT THE PLACE TO ASK FOR SUPPORT OR FEATURE REQUESTS!** Please
+        use our [Support Center](https://app.lizardbyte.dev/support) for support
+        issues.
+
+        This issue template is for reporting problems with **Homebrew
+        installation** of our Formulas. If you're having issues with the
+        application itself after installation, please report that elsewhere.
+  - type: dropdown
+    id: _formulas
+    attributes:
+      label: Formula Name
+      description: Which Formula are you trying to install?
+      options:
+        - TODO
+    validations:
+      required: true
+  - type: input
+    id: brew-version
+    attributes:
+      label: Homebrew Version
+      description: Output of `brew --version`
+      placeholder: e.g., Homebrew 5.0.4
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: Operating System
+      description: Your OS and version
+      placeholder: e.g., macOS 14 or Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Issue
+      description: A clear and concise description of what went wrong during installation.
+      placeholder: Tell us what happened when you tried to install the Formula.
+    validations:
+      required: true
+  - type: textarea
+    id: terminal-output
+    attributes:
+      label: Relevant Terminal Output
+      description: Paste the relevant terminal output from your installation attempt here.
+      placeholder: Paste the terminal output here...
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: full-log
+    attributes:
+      label: Full Installation Log
+      description: >
+        **IMPORTANT:** When brew fails, it tells you where the full logs are
+        located. You MUST provide the complete log file contents.
+
+
+        To get the full log:
+
+        1. Look for a message in your terminal like: "Last 15 lines from
+        /path/to/Logs/Homebrew/..."
+           - macOS: Usually in `/Users/username/Library/Logs/Homebrew/formula-name/`
+           - Linux: Usually in `/home/username/.cache/Homebrew/Logs/formula-name/`
+
+        2. Navigate to that directory and open the log file
+
+        3. Copy the entire contents and paste them here
+
+
+        Without the full log, we cannot diagnose compilation issues!
+      placeholder: Paste the FULL log file contents here...
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: install-command
+    attributes:
+      label: Installation Command Used
+      description: What command did you run to install?
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: >
+        Add any other context about the installation issue here (e.g., custom
+        brew configuration, previous installation attempts, etc.).
+  - type: markdown
+    attributes:
+      value: >
+        Make sure to close your issue when it's solved! If you found the
+        solution yourself please comment so that others benefit from it. If the
+        solution required changes to our code, please consider opening a Pull
+        Request.
