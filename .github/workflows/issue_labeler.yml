@@ -1,0 +1,33 @@
+---
+name: Issue labeler
+permissions:
+  contents: read
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+
+jobs:
+  label-component:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Parse issue form
+        uses: stefanbuck/github-issue-parser@v3
+        id: issue-parser
+        with:
+          template-path: .github/ISSUE_TEMPLATE/bug-report.yml
+
+      - name: Set formula label
+        uses: redhat-plumbers-in-action/advanced-issue-labeler@v3
+        with:
+          issue-form: ${{ steps.issue-parser.outputs.jsonString }}
+          section: _formulas
+          token: ${{ secrets.GH_BOT_TOKEN }}
