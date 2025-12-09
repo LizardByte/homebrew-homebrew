@@ -8,8 +8,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.1207.140157"
-  version "2025.1207.140157"
+    tag: "v2025.1209.20401"
+  version "2025.1209.20401"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -82,8 +82,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2025.1207.140157"
-    ENV["COMMIT"] = "75809f13e39964fef6ef29bc2d5d5ac17dc7f456"
+    ENV["BUILD_VERSION"] = "2025.1209.20401"
+    ENV["COMMIT"] = "446e0a52527310d83e2cced7be05bca1f52a04de"
 
     if OS.linux?
       # Use GCC because gcov from llvm cannot handle our paths
