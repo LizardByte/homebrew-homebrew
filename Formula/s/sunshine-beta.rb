@@ -5,12 +5,10 @@ class SunshineBeta < Formula
   GCC_FORMULA = "gcc@#{GCC_VERSION}".freeze
   IS_UPSTREAM_REPO = ENV.fetch("GITHUB_REPOSITORY", "") == "LizardByte/Sunshine"
 
-  conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
     tag: "v2025.1210.519"
-  version "2025.1210.519"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -36,12 +34,12 @@ class SunshineBeta < Formula
   depends_on "node" => :build
   depends_on "pkgconf" => :build
   depends_on "gcovr" => :test
+  depends_on "boost"
   depends_on "curl"
+  depends_on "icu4c@78"
   depends_on "miniupnpc"
-  depends_on "openssl"
+  depends_on "openssl@3"
   depends_on "opus"
-  depends_on "boost" => :recommended
-  depends_on "icu4c" => :recommended
 
   on_macos do
     depends_on "llvm" => [:build, :test]
@@ -49,16 +47,28 @@ class SunshineBeta < Formula
 
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
+    depends_on "at-spi2-core"
     depends_on "avahi"
+    depends_on "ayatana-ido"
+    depends_on "cairo"
+    depends_on "gdk-pixbuf"
+    depends_on "glib"
     depends_on "gnu-which"
+    depends_on "gtk+3"
+    depends_on "harfbuzz"
     depends_on "libayatana-appindicator"
+    depends_on "libayatana-indicator"
     depends_on "libcap"
+    depends_on "libdbusmenu"
     depends_on "libdrm"
+    depends_on "libice"
     depends_on "libnotify"
+    depends_on "libsm"
     depends_on "libva"
     depends_on "libx11"
     depends_on "libxcb"
     depends_on "libxcursor"
+    depends_on "libxext"
     depends_on "libxfixes"
     depends_on "libxi"
     depends_on "libxinerama"
@@ -66,10 +76,13 @@ class SunshineBeta < Formula
     depends_on "libxtst"
     depends_on "mesa"
     depends_on "numactl"
+    depends_on "pango"
     depends_on "pulseaudio"
     depends_on "systemd"
     depends_on "wayland"
   end
+
+  conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
 
   fails_with :clang do
     build 1400
