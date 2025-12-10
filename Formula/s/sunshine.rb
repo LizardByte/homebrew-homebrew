@@ -1,12 +1,14 @@
 require "language/node"
 
 class Sunshine < Formula
-  # conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
+  GCC_VERSION = "14".freeze
+  GCC_FORMULA = "gcc@#{GCC_VERSION}".freeze
+  IS_UPSTREAM_REPO = ENV.fetch("GITHUB_REPOSITORY", "") == "LizardByte/Sunshine"
+
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
     tag: "v2025.924.154138"
-  version "2025.924.154138"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -32,22 +34,35 @@ class Sunshine < Formula
   depends_on "node" => :build
   depends_on "pkgconf" => :build
   depends_on "curl"
+  depends_on "icu4c@78"
   depends_on "miniupnpc"
-  depends_on "openssl"
+  depends_on "openssl@3"
   depends_on "opus"
-  depends_on "icu4c" => :recommended
 
   on_linux do
+    depends_on GCC_FORMULA => [:build, :test]
+    depends_on "at-spi2-core"
     depends_on "avahi"
+    depends_on "ayatana-ido"
+    depends_on "cairo"
+    depends_on "gdk-pixbuf"
+    depends_on "glib"
     depends_on "gnu-which"
+    depends_on "gtk+3"
+    depends_on "harfbuzz"
     depends_on "libayatana-appindicator"
+    depends_on "libayatana-indicator"
     depends_on "libcap"
+    depends_on "libdbusmenu"
     depends_on "libdrm"
+    depends_on "libice"
     depends_on "libnotify"
+    depends_on "libsm"
     depends_on "libva"
     depends_on "libx11"
     depends_on "libxcb"
     depends_on "libxcursor"
+    depends_on "libxext"
     depends_on "libxfixes"
     depends_on "libxi"
     depends_on "libxinerama"
@@ -55,10 +70,13 @@ class Sunshine < Formula
     depends_on "libxtst"
     depends_on "mesa"
     depends_on "numactl"
+    depends_on "pango"
     depends_on "pulseaudio"
     depends_on "systemd"
     depends_on "wayland"
   end
+
+  conflicts_with "sunshine-beta", because: "sunshine and sunshine-beta cannot be installed at the same time"
 
   fails_with :clang do
     build 1400
@@ -75,6 +93,15 @@ class Sunshine < Formula
     ENV["BUILD_VERSION"] = "2025.924.154138"
     ENV["COMMIT"] = "86188d47a7463b0f73b35de18a628353adeaa20e"
 
+    if OS.linux?
+      gcc_path = Formula[GCC_FORMULA]
+      ENV["CC"] = "#{gcc_path.opt_bin}/gcc-#{GCC_VERSION}"
+      ENV["CXX"] = "#{gcc_path.opt_bin}/g++-#{GCC_VERSION}"
+
+      # Add static linking flags for libgcc and libstdc++
+      ENV.append "LDFLAGS", "-static-libgcc -static-libstdc++"
+    end
+
     args = %W[
       -DBUILD_WERROR=ON
       -DCMAKE_CXX_STANDARD=23
@@ -87,6 +114,14 @@ class Sunshine < Formula
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+
+    if IS_UPSTREAM_REPO
+      args << "-DBUILD_TESTS=ON"
+      ohai "Building tests: enabled"
+    else
+      args << "-DBUILD_TESTS=OFF"
+      ohai "Building tests: disabled"
+    end
 
     if build.with? "docs"
       ohai "Building docs: enabled"
@@ -116,7 +151,12 @@ class Sunshine < Formula
       ohai "Linking against ICU libraries at: #{icu4c_lib_path}"
     end
 
-    args << "-DCUDA_FAIL_ON_MISSING=OFF" if OS.linux?
+    if OS.linux?
+      args << "-DCUDA_FAIL_ON_MISSING=OFF"
+      # Pass static linking flags to CMake for libgcc and libstdc++
+      args << "-DCMAKE_EXE_LINKER_FLAGS=-static-libgcc -static-libstdc++"
+      args << "-DCMAKE_SHARED_LINKER_FLAGS=-static-libgcc -static-libstdc++"
+    end
 
     system "cmake", "-S", ".", "-B", "build", "-G", "Unix Makefiles",
             *std_cmake_args,
@@ -124,7 +164,8 @@ class Sunshine < Formula
 
     system "make", "-C", "build"
     system "make", "-C", "build", "install"
-    bin.install "build/tests/test_sunshine"
+
+    bin.install "build/tests/test_sunshine" if IS_UPSTREAM_REPO
 
     # codesign the binary on intel macs
     system "codesign", "-s", "-", "--force", "--deep", bin/"sunshine" if OS.mac? && Hardware::CPU.intel?
@@ -167,8 +208,10 @@ class Sunshine < Formula
     # test that the binary runs at all
     system bin/"sunshine", "--version"
 
-    # run the test suite
-    system bin/"test_sunshine", "--gtest_color=yes", "--gtest_output=xml:test_results.xml"
-    assert_path_exists testpath/"test_results.xml"
+    if IS_UPSTREAM_REPO
+      # run the test suite
+      system bin/"test_sunshine", "--gtest_color=yes", "--gtest_output=xml:test_results.xml"
+      assert_path_exists testpath/"test_results.xml"
+    end
   end
 end
