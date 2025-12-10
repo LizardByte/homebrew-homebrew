@@ -3,13 +3,12 @@ require "language/node"
 class SunshineBeta < Formula
   GCC_VERSION = "14".freeze
   GCC_FORMULA = "gcc@#{GCC_VERSION}".freeze
+  IS_UPSTREAM_REPO = ENV.fetch("GITHUB_REPOSITORY", "") == "LizardByte/Sunshine"
 
-  conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
     tag: "v2025.1209.20401"
-  version "2025.1209.20401"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -35,12 +34,12 @@ class SunshineBeta < Formula
   depends_on "node" => :build
   depends_on "pkgconf" => :build
   depends_on "gcovr" => :test
+  depends_on "boost"
   depends_on "curl"
+  depends_on "icu4c@78"
   depends_on "miniupnpc"
-  depends_on "openssl"
+  depends_on "openssl@3"
   depends_on "opus"
-  depends_on "boost" => :recommended
-  depends_on "icu4c" => :recommended
 
   on_macos do
     depends_on "llvm" => [:build, :test]
@@ -48,16 +47,28 @@ class SunshineBeta < Formula
 
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
+    depends_on "at-spi2-core"
     depends_on "avahi"
+    depends_on "ayatana-ido"
+    depends_on "cairo"
+    depends_on "gdk-pixbuf"
+    depends_on "glib"
     depends_on "gnu-which"
+    depends_on "gtk+3"
+    depends_on "harfbuzz"
     depends_on "libayatana-appindicator"
+    depends_on "libayatana-indicator"
     depends_on "libcap"
+    depends_on "libdbusmenu"
     depends_on "libdrm"
+    depends_on "libice"
     depends_on "libnotify"
+    depends_on "libsm"
     depends_on "libva"
     depends_on "libx11"
     depends_on "libxcb"
     depends_on "libxcursor"
+    depends_on "libxext"
     depends_on "libxfixes"
     depends_on "libxi"
     depends_on "libxinerama"
@@ -65,10 +76,13 @@ class SunshineBeta < Formula
     depends_on "libxtst"
     depends_on "mesa"
     depends_on "numactl"
+    depends_on "pango"
     depends_on "pulseaudio"
     depends_on "systemd"
     depends_on "wayland"
   end
+
+  conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
 
   fails_with :clang do
     build 1400
@@ -104,6 +118,14 @@ class SunshineBeta < Formula
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+
+    if IS_UPSTREAM_REPO
+      args << "-DBUILD_TESTS=ON"
+      ohai "Building tests: enabled"
+    else
+      args << "-DBUILD_TESTS=OFF"
+      ohai "Building tests: disabled"
+    end
 
     if build.with? "docs"
       ohai "Building docs: enabled"
@@ -141,7 +163,8 @@ class SunshineBeta < Formula
 
     system "make", "-C", "build"
     system "make", "-C", "build", "install"
-    bin.install "build/tests/test_sunshine"
+
+    bin.install "build/tests/test_sunshine" if IS_UPSTREAM_REPO
 
     # codesign the binary on intel macs
     system "codesign", "-s", "-", "--force", "--deep", bin/"sunshine" if OS.mac? && Hardware::CPU.intel?
@@ -184,30 +207,32 @@ class SunshineBeta < Formula
     # test that the binary runs at all
     system bin/"sunshine", "--version"
 
-    # run the test suite
-    system bin/"test_sunshine", "--gtest_color=yes", "--gtest_output=xml:tests/test_results.xml"
-    assert_path_exists File.join(testpath, "tests", "test_results.xml")
+    if IS_UPSTREAM_REPO
+      # run the test suite
+      system bin/"test_sunshine", "--gtest_color=yes", "--gtest_output=xml:tests/test_results.xml"
+      assert_path_exists File.join(testpath, "tests", "test_results.xml")
 
-    # create gcovr report
-    buildpath = ENV.fetch("HOMEBREW_BUILDPATH", "")
-    unless buildpath.empty?
-      # Change to the source directory for gcovr to work properly
-      cd "#{buildpath}/build" do
-        # Use GCC version to match what was used during compilation
-        if OS.linux?
-          gcc_path = Formula[GCC_FORMULA]
-          gcov_executable = "#{gcc_path.opt_bin}/gcov-#{GCC_VERSION}"
+      # create gcovr report
+      buildpath = ENV.fetch("HOMEBREW_BUILDPATH", "")
+      unless buildpath.empty?
+        # Change to the source directory for gcovr to work properly
+        cd "#{buildpath}/build" do
+          # Use GCC version to match what was used during compilation
+          if OS.linux?
+            gcc_path = Formula[GCC_FORMULA]
+            gcov_executable = "#{gcc_path.opt_bin}/gcov-#{GCC_VERSION}"
 
-          system "gcovr", ".",
-            "-r", "../src",
-            "--gcov-executable", gcov_executable,
-            "--exclude-noncode-lines",
-            "--exclude-throw-branches",
-            "--exclude-unreachable-branches",
-            "--xml-pretty",
-            "-o=#{testpath}/coverage.xml"
+            system "gcovr", ".",
+              "-r", "../src",
+              "--gcov-executable", gcov_executable,
+              "--exclude-noncode-lines",
+              "--exclude-throw-branches",
+              "--exclude-unreachable-branches",
+              "--xml-pretty",
+              "-o=#{testpath}/coverage.xml"
 
-          assert_path_exists File.join(testpath, "coverage.xml")
+            assert_path_exists File.join(testpath, "coverage.xml")
+          end
         end
       end
     end
