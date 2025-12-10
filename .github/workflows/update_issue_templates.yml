@@ -60,7 +60,7 @@ jobs:
         if: |
           steps.update_dropdown.outputs.modified == 'true' &&
           github.event_name != 'pull_request'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           add-paths: |
             .github/ISSUE_TEMPLATE/*.yml
