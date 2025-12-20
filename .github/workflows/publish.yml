@@ -26,6 +26,9 @@ jobs:
 
       - name: Set up git
         uses: Homebrew/actions/git-user-config@main
+        with:
+          token: ${{ secrets.GH_BOT_TOKEN }}
+          username: ${{ secrets.GH_BOT_NAME }}
 
       - name: Pull bottles
         env:
