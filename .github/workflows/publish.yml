@@ -41,5 +41,4 @@ jobs:
       - name: Push commits
         uses: Homebrew/actions/git-try-push@main
         with:
-          token: ${{ secrets.GH_BOT_TOKEN }}
           branch: ${{ github.event.pull_request.head.ref }}
