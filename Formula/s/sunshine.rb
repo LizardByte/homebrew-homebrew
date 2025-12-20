@@ -2,15 +2,6 @@ require "language/node"
 
 class Sunshine < Formula
   GCC_VERSION = "14".freeze
-
-  bottle do
-    root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 1
-    sha256 arm64_tahoe:   "a3104dbcfb18946c5aa9c4bc6b4ff1f12882f3bd757b47625cceb9dd7eb9acd7"
-    sha256 arm64_sequoia: "6554b9b446987f4023142d420923cfd626b58759d9374f0caa686e9a5743a35a"
-    sha256 arm64_sonoma:  "2516ea08c6d2741f0aad55e0b3a72f7c1d6792d26e4631099969262797cdab5c"
-    sha256 x86_64_linux:  "734c87e5fbf9c2507bfea8bb929700ba167fdfe9444ad84a0789b013d7c3c2c9"
-  end
   GCC_FORMULA = "gcc@#{GCC_VERSION}".freeze
   IS_UPSTREAM_REPO = ENV.fetch("GITHUB_REPOSITORY", "") == "LizardByte/Sunshine"
 
@@ -31,6 +22,15 @@ class Sunshine < Formula
 
       match[1]
     end
+  end
+
+  bottle do
+    root_url "https://ghcr.io/v2/lizardbyte/homebrew"
+    rebuild 1
+    sha256 arm64_tahoe:   "a3104dbcfb18946c5aa9c4bc6b4ff1f12882f3bd757b47625cceb9dd7eb9acd7"
+    sha256 arm64_sequoia: "6554b9b446987f4023142d420923cfd626b58759d9374f0caa686e9a5743a35a"
+    sha256 arm64_sonoma:  "2516ea08c6d2741f0aad55e0b3a72f7c1d6792d26e4631099969262797cdab5c"
+    sha256 x86_64_linux:  "734c87e5fbf9c2507bfea8bb929700ba167fdfe9444ad84a0789b013d7c3c2c9"
   end
 
   option "with-docs", "Enable docs"
