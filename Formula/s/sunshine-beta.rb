@@ -2,6 +2,15 @@ require "language/node"
 
 class SunshineBeta < Formula
   GCC_VERSION = "14".freeze
+
+  bottle do
+    root_url "https://ghcr.io/v2/lizardbyte/homebrew"
+    rebuild 1
+    sha256 arm64_tahoe:   "12dc28f3a16d015cddab4f529f86eec38cd8b7496d7e2a51a32b29b500ed1096"
+    sha256 arm64_sequoia: "7184010d1dccd80f3cc56c6a349641a6f6f54c906efb28b484feac28da8d1940"
+    sha256 arm64_sonoma:  "fb2ff171ecc00813412c726e547eac23e46357e891841d5f477952c6e105271b"
+    sha256 x86_64_linux:  "67a8b92f0cae64bea858014d711bd96cd3afd09993fdfaa6beb601281bcb26a8"
+  end
   GCC_FORMULA = "gcc@#{GCC_VERSION}".freeze
   IS_UPSTREAM_REPO = ENV.fetch("GITHUB_REPOSITORY", "") == "LizardByte/Sunshine"
 
