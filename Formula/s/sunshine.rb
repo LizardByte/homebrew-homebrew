@@ -215,3 +215,5 @@ class Sunshine < Formula
     end
   end
 end
+
+# this comment is forcing bottle builds in https://github.com/LizardByte/homebrew-homebrew/pull/42
