@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: More space
         if: runner.os == 'Linux'
-        uses: LizardByte/actions/actions/more_space@v2025.1028.23217
+        uses: LizardByte/actions/actions/more_space@v2025.1221.31807
         with:
           analyze-space-savings: true
           clean-all: true
