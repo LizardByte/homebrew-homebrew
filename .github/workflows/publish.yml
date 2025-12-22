@@ -53,6 +53,8 @@ jobs:
           # Fetch the PR branch
           if [ "$PR_FROM_FORK" = "true" ]; then
             git fetch "https://github.com/${PR_HEAD_REPO}.git" "${PR_HEAD_REF}:${PR_HEAD_REF}"
+            # Add fork as a remote for pushing
+            git remote add fork "https://github.com/${PR_HEAD_REPO}.git" || true
           else
             git fetch origin "${PR_HEAD_REF}:${PR_HEAD_REF}"
           fi
@@ -68,32 +70,27 @@ jobs:
           PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: brew pr-pull --debug --tap="${GITHUB_REPOSITORY}" "${PULL_REQUEST}"
 
-      - name: Push commits to PR branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          PR_FROM_FORK: ${{ github.event.pull_request.head.repo.fork }}
-        run: |
-          cd "$(brew --repository)/Library/Taps/${GITHUB_REPOSITORY/\//-}"
+      - name: Get tap directory
+        id: tap-dir
+        run: echo "path=$(brew --repository)/Library/Taps/${GITHUB_REPOSITORY/\//-}" >> "${GITHUB_OUTPUT}"
 
-          # Check if there are commits to push
-          # brew pr-pull creates commits, so we check if local is ahead of remote
-          if git rev-parse --verify HEAD >/dev/null 2>&1 && \
-             git rev-parse --verify "@{u}" >/dev/null 2>&1 && \
-             [ "$(git rev-list @{u}..HEAD --count)" -eq 0 ]; then
-            echo "No commits to push"
-            exit 0
-          fi
+      - name: Push commits to PR branch (origin)
+        if: github.event.pull_request.head.repo.fork == false
+        uses: Homebrew/actions/git-try-push@main
+        with:
+          token: ${{ secrets.GH_BOT_TOKEN }}
+          directory: ${{ steps.tap-dir.outputs.path }}
+          branch: ${{ github.event.pull_request.head.ref }}
+          force: true
+          origin_branch: ${{ github.event.pull_request.head.ref }}
 
-          # Configure git to use the token for authentication
-          git config url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-
-          # Push to the PR branch with force to prevent conflicts
-          if [ "$PR_FROM_FORK" = "true" ]; then
-            # For forks, push to the fork repository
-            git push --force-with-lease "https://x-access-token:${GITHUB_TOKEN}@github.com/${PR_HEAD_REPO}.git" "HEAD:${PR_HEAD_REF}"
-          else
-            # For origin PRs, push to origin
-            git push --force-with-lease origin "HEAD:${PR_HEAD_REF}"
-          fi
+      - name: Push commits to PR branch (fork)
+        if: github.event.pull_request.head.repo.fork == true
+        uses: Homebrew/actions/git-try-push@main
+        with:
+          token: ${{ secrets.GH_BOT_TOKEN }}
+          directory: ${{ steps.tap-dir.outputs.path }}
+          remote: fork
+          branch: ${{ github.event.pull_request.head.ref }}
+          force: true
+          origin_branch: ${{ github.event.pull_request.head.ref }}
