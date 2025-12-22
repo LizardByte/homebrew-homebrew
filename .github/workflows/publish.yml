@@ -32,35 +32,17 @@ jobs:
             });
 
       - name: Set up Homebrew
+        id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@main
         with:
           stable: true
           token: ${{ secrets.GH_BOT_TOKEN }}
 
       - name: Set up git
-        run: |
-          git config user.name "${{ secrets.GH_BOT_NAME }}"
-          git config user.email "${{ secrets.GH_BOT_EMAIL }}"
-
-      - name: Checkout PR branch
-        env:
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          PR_FROM_FORK: ${{ github.event.pull_request.head.repo.fork }}
-        run: |
-          cd "$(brew --repository)/Library/Taps/${GITHUB_REPOSITORY/\//-}"
-
-          # Fetch the PR branch
-          if [ "$PR_FROM_FORK" = "true" ]; then
-            git fetch "https://github.com/${PR_HEAD_REPO}.git" "${PR_HEAD_REF}:${PR_HEAD_REF}"
-            # Add fork as a remote for pushing (skip if already exists)
-            git remote get-url fork >/dev/null 2>&1 || git remote add fork "https://github.com/${PR_HEAD_REPO}.git"
-          else
-            git fetch origin "${PR_HEAD_REF}:${PR_HEAD_REF}"
-          fi
-
-          # Checkout the PR branch
-          git checkout "${PR_HEAD_REF}"
+        uses: Homebrew/actions/git-user-config@main
+        with:
+          token: ${{ secrets.GH_BOT_TOKEN }}
+          username: ${{ secrets.GH_BOT_NAME }}
 
       - name: Pull bottles
         env:
@@ -70,25 +52,18 @@ jobs:
           PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: brew pr-pull --debug --tap="${GITHUB_REPOSITORY}" "${PULL_REQUEST}"
 
-      - name: Get tap directory
-        id: tap-dir
-        run: echo "path=$(brew --repository)/Library/Taps/${GITHUB_REPOSITORY/\//-}" >> "${GITHUB_OUTPUT}"
-
-      - name: Push commits to PR branch (origin)
-        if: github.event.pull_request.head.repo.fork == false
-        uses: Homebrew/actions/git-try-push@main
-        with:
-          token: ${{ secrets.GH_BOT_TOKEN }}
-          directory: ${{ steps.tap-dir.outputs.path }}
-          branch: ${{ github.event.pull_request.head.ref }}
-          force: true
-
-      - name: Push commits to PR branch (fork)
+      - name: Set up fork remote
         if: github.event.pull_request.head.repo.fork == true
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
+        env:
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: git remote get-url fork >/dev/null 2>&1 || git remote add fork "https://github.com/${PR_HEAD_REPO}.git"
+
+      - name: Push commits to PR branch
         uses: Homebrew/actions/git-try-push@main
         with:
           token: ${{ secrets.GH_BOT_TOKEN }}
-          directory: ${{ steps.tap-dir.outputs.path }}
-          remote: fork
+          directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
+          remote: ${{ github.event.pull_request.head.repo.fork == true && 'fork' || 'origin' }}
           branch: ${{ github.event.pull_request.head.ref }}
           force: true
