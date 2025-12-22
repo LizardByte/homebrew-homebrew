@@ -53,8 +53,8 @@ jobs:
           # Fetch the PR branch
           if [ "$PR_FROM_FORK" = "true" ]; then
             git fetch "https://github.com/${PR_HEAD_REPO}.git" "${PR_HEAD_REF}:${PR_HEAD_REF}"
-            # Add fork as a remote for pushing
-            git remote add fork "https://github.com/${PR_HEAD_REPO}.git" || true
+            # Add fork as a remote for pushing (skip if already exists)
+            git remote get-url fork >/dev/null 2>&1 || git remote add fork "https://github.com/${PR_HEAD_REPO}.git"
           else
             git fetch origin "${PR_HEAD_REF}:${PR_HEAD_REF}"
           fi
@@ -82,7 +82,6 @@ jobs:
           directory: ${{ steps.tap-dir.outputs.path }}
           branch: ${{ github.event.pull_request.head.ref }}
           force: true
-          origin_branch: ${{ github.event.pull_request.head.ref }}
 
       - name: Push commits to PR branch (fork)
         if: github.event.pull_request.head.repo.fork == true
@@ -93,4 +92,3 @@ jobs:
           remote: fork
           branch: ${{ github.event.pull_request.head.ref }}
           force: true
-          origin_branch: ${{ github.event.pull_request.head.ref }}
