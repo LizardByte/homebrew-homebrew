@@ -36,14 +36,14 @@ jobs:
           PR_FROM_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           cd "$(brew --repository)/Library/Taps/${GITHUB_REPOSITORY/\//-}"
-          
+
           # Fetch the PR branch
           if [ "$PR_FROM_FORK" = "true" ]; then
             git fetch "https://github.com/${PR_HEAD_REPO}.git" "${PR_HEAD_REF}:${PR_HEAD_REF}"
           else
             git fetch origin "${PR_HEAD_REF}:${PR_HEAD_REF}"
           fi
-          
+
           # Checkout the PR branch
           git checkout "${PR_HEAD_REF}"
 
@@ -63,16 +63,16 @@ jobs:
           PR_FROM_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           cd "$(brew --repository)/Library/Taps/${GITHUB_REPOSITORY/\//-}"
-          
+
           # Check if there are any changes to commit
           if git diff --quiet && git diff --cached --quiet; then
             echo "No changes to push"
             exit 0
           fi
-          
+
           # Configure git to use the token for authentication
-          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-          
+          git config url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+
           # Push to the PR branch
           if [ "$PR_FROM_FORK" = "true" ]; then
             # For forks, push to the fork repository
