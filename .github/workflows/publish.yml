@@ -81,7 +81,7 @@ jobs:
           # brew pr-pull creates commits, so we check if local is ahead of remote
           if git rev-parse --verify HEAD >/dev/null 2>&1 && \
              git rev-parse --verify "@{u}" >/dev/null 2>&1 && \
-             [ "$(git rev-list HEAD...@{u} --count)" -eq 0 ]; then
+             [ "$(git rev-list @{u}..HEAD --count)" -eq 0 ]; then
             echo "No commits to push"
             exit 0
           fi
