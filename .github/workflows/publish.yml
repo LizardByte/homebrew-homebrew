@@ -18,11 +18,23 @@ jobs:
       packages: write
       pull-requests: write
     steps:
+      - name: Comment on PR
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GH_BOT_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: '⚠️ **Important**: This PR is being processed to add bottles. Please do not push any changes to this PR branch as it may cause conflicts or issues with the bottle publishing process. If you need to make changes, please close this PR and open a new one.'
+            });
+
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@main
         with:
           stable: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_BOT_TOKEN }}
 
       - name: Set up git
         run: |
@@ -49,8 +61,8 @@ jobs:
 
       - name: Pull bottles
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
+          HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
           HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: brew pr-pull --debug --workflows --tap="${GITHUB_REPOSITORY}" "${PULL_REQUEST}"
@@ -81,15 +93,3 @@ jobs:
             # For origin PRs, push to origin
             git push origin "HEAD:${PR_HEAD_REF}"
           fi
-
-      - name: Comment on PR
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: '⚠️ **Important**: Bottles have been added to this PR. Please do not push any changes to this PR branch as it may cause conflicts or issues with the bottle publishing process. If you need to make changes, please close this PR and open a new one.'
-            });
