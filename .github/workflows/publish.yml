@@ -23,12 +23,32 @@ jobs:
         with:
           github-token: ${{ secrets.GH_BOT_TOKEN }}
           script: |
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const runUrl = [
+              'https://github.com',
+              context.repo.owner,
+              context.repo.repo,
+              'actions',
+              'runs',
+              context.runId,
+            ].join('/');
+
+            const bodyLines = [
+              '⚠️ **Important**: This PR is being processed to add bottles.',
+              '',
+              'Please **do not push any changes** to this PR branch as it may',
+              'cause conflicts or issues with the bottle publishing process.',
+              '',
+              'If you need to make changes:',
+              '1. Mark this PR as draft',
+              `2. Wait for the [publish workflow](${runUrl}) to complete`,
+              '3. Make your changes after the bottles have been added'
+            ];
+            const body = bodyLines.join('\n');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: `⚠️ **Important**: This PR is being processed to add bottles.\n\nPlease **do not push any changes** to this PR branch as it may cause conflicts or issues with the bottle publishing process.\n\nIf you need to make changes:\n1. Mark this PR as draft\n2. Wait for the [publish workflow](${runUrl}) to complete\n3. Make your changes after the bottles have been added`
+              body
             });
 
       - name: Set up Homebrew
@@ -44,6 +64,31 @@ jobs:
           token: ${{ secrets.GH_BOT_TOKEN }}
           username: ${{ secrets.GH_BOT_NAME }}
 
+      - name: Get PR data
+        id: pr-data
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+
+            const data = pr.data;
+            const branch = data.head.ref;
+            const remoteBranch = branch;
+            const remote = data.head.repo.clone_url;
+            const headRepoOwner = data.head.repo.owner.login;
+            const isFork = data.head.repo.fork;
+
+            const finalBranch = isFork ? `${headRepoOwner}-${branch}` : branch;
+
+            core.setOutput('branch', finalBranch);
+            core.setOutput('remote_branch', remoteBranch);
+            core.setOutput('remote', remote);
+
       - name: Pull bottles
         env:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,18 +97,15 @@ jobs:
           PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: brew pr-pull --debug --tap="${GITHUB_REPOSITORY}" "${PULL_REQUEST}"
 
-      - name: Set up fork remote
-        if: github.event.pull_request.head.repo.fork == true
-        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
-        env:
-          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        run: git remote get-url fork >/dev/null 2>&1 || git remote add fork "https://github.com/${PR_HEAD_REPO}.git"
-
       - name: Push commits to PR branch
         uses: Homebrew/actions/git-try-push@main
         with:
           token: ${{ secrets.GH_BOT_TOKEN }}
           directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
-          remote: ${{ github.event.pull_request.head.repo.fork == true && 'fork' || 'origin' }}
-          branch: ${{ github.event.pull_request.head.ref }}
+          remote: ${{ steps.pr-data.outputs.remote }}
+          branch: ${{ steps.pr-data.outputs.branch }}
+          remote_branch: ${{ steps.pr-data.outputs.remote_branch }}
           force: true
+        env:
+          GIT_COMMITTER_NAME: ${{ secrets.GH_BOT_NAME }}
+          GIT_COMMITTER_EMAIL: ${{ secrets.GH_BOT_EMAIL }}
