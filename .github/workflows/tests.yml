@@ -12,14 +12,182 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-bot:
+  # Check syntax and detect which platforms need testing
+  setup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      platforms: ${{ steps.detect.outputs.platforms }}
+      has-formulae: ${{ steps.detect.outputs.has-formulae }}
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+        with:
+          stable: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Homebrew Bundler RubyGems
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+          key: ubuntu-latest-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: ubuntu-latest-rubygems-
+
+      - name: Brew cleanup before
+        run: brew test-bot --fail-fast --only-cleanup-before
+
+      - name: Brew setup
+        run: brew test-bot --fail-fast --only-setup
+
+      - name: Check syntax
+        run: brew test-bot --fail-fast --only-tap-syntax
+
+      - name: Detect required platforms
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          # Get the tap repository path
+          TAP_PATH="$(brew --repository "${GITHUB_REPOSITORY}")"
+
+          # Detect changed formula files
+          # We check manually rather than relying solely on brew test-bot --only-formulae-detect
+          # because we need to analyze the specific formula files to determine platform requirements
+          if [ "${GITHUB_EVENT_NAME}" == "pull_request" ]; then
+            CHANGED_FILES=$(git -C "${TAP_PATH}" diff --name-only \
+              "${BASE_SHA}" "${HEAD_SHA}" | grep '^Formula/' || true)
+          else
+            CHANGED_FILES=$(git -C "${TAP_PATH}" diff --name-only \
+              "${BEFORE_SHA}" "${HEAD_SHA}" | grep '^Formula/' || true)
+          fi
+
+          if [ -z "${CHANGED_FILES}" ]; then
+            echo "No formula files changed, skipping tests"
+            echo "has-formulae=false" >> "${GITHUB_OUTPUT}"
+            echo "platforms=[]" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "has-formulae=true" >> "${GITHUB_OUTPUT}"
+          echo "Changed formula files:"
+          echo "${CHANGED_FILES}"
+
+          # Default to empty arrays
+          NEEDS_LINUX=false
+          NEEDS_MACOS=false
+          MACOS_VERSIONS=()
+
+          # Check each changed formula
+          for file in ${CHANGED_FILES}; do
+            FULL_PATH="${TAP_PATH}/${file}"
+            if [ -f "${FULL_PATH}" ]; then
+              echo "Checking ${file}..."
+
+              HAS_LINUX_DEPENDS=false
+              HAS_MACOS_DEPENDS=false
+
+              # Check if formula has Linux dependency
+              if grep -q 'depends_on :linux' "${FULL_PATH}"; then
+                HAS_LINUX_DEPENDS=true
+              fi
+
+              # Check if formula has macOS dependency (including version-specific)
+              if grep -qE 'depends_on :macos|depends_on macos:' "${FULL_PATH}"; then
+                HAS_MACOS_DEPENDS=true
+
+                # Extract specific macOS versions if specified
+                # Pattern: depends_on macos: :ventura, depends_on macos: :sonoma, etc.
+                if grep -qE 'depends_on macos: :' "${FULL_PATH}"; then
+                  # Extract the macOS version(s)
+                  MACOS_VERSION_MATCHES=$(grep -oE 'depends_on macos: :[a-z_]+' "${FULL_PATH}" | \
+                    sed 's/depends_on macos: ://' || true)
+
+                  for version in ${MACOS_VERSION_MATCHES}; do
+                    case "${version}" in
+                      ventura)
+                        # macOS 13 Ventura - not commonly available in GitHub Actions
+                        MACOS_VERSIONS+=("macos-13")
+                        ;;
+                      sonoma)
+                        # macOS 14 Sonoma
+                        MACOS_VERSIONS+=("macos-14")
+                        ;;
+                      sequoia)
+                        # macOS 15 Sequoia
+                        MACOS_VERSIONS+=("macos-15")
+                        ;;
+                      tahoe)
+                        # macOS 16 Tahoe
+                        MACOS_VERSIONS+=("macos-26")
+                        ;;
+                      *)
+                        echo "  -> Unknown macOS version: ${version}, will use all macOS runners"
+                        ;;
+                    esac
+                  done
+                fi
+              fi
+
+              # Determine platform requirements
+              if [ "${HAS_LINUX_DEPENDS}" == "true" ] && [ "${HAS_MACOS_DEPENDS}" == "false" ]; then
+                echo "  -> Linux-only formula detected"
+                NEEDS_LINUX=true
+              elif [ "${HAS_MACOS_DEPENDS}" == "true" ] && [ "${HAS_LINUX_DEPENDS}" == "false" ]; then
+                echo "  -> macOS-only formula detected"
+                NEEDS_MACOS=true
+              else
+                echo "  -> Multi-platform formula (no specific OS dependency)"
+                NEEDS_LINUX=true
+                NEEDS_MACOS=true
+              fi
+            fi
+          done
+
+          # Build the platform matrix
+          # macOS version mapping to GitHub Actions runners:
+          # - macos-13 = macOS 13.x Ventura (x86_64)
+          # - macos-14 = macOS 14.x Sonoma (arm64)
+          # - macos-15 = macOS 15.x Sequoia (arm64)
+          # - macos-26 = macOS 16.x Tahoe (arm64)
+          PLATFORMS="["
+          if [ "${NEEDS_LINUX}" == "true" ]; then
+            PLATFORMS="${PLATFORMS}\"ubuntu-22.04\","
+          fi
+          if [ "${NEEDS_MACOS}" == "true" ]; then
+            # If specific macOS versions were detected, use only those
+            if [ ${#MACOS_VERSIONS[@]} -gt 0 ]; then
+              echo "  -> Using specific macOS versions: ${MACOS_VERSIONS[*]}"
+              for macos_runner in "${MACOS_VERSIONS[@]}"; do
+                PLATFORMS="${PLATFORMS}\"${macos_runner}\","
+              done
+            else
+              # Otherwise use all available macOS runners
+              PLATFORMS="${PLATFORMS}\"macos-14\",\"macos-15\",\"macos-26\","
+            fi
+          fi
+
+          # Remove trailing comma and close array
+          PLATFORMS="${PLATFORMS%,}]"
+
+          # If no platforms detected, default to all platforms
+          if [ "${PLATFORMS}" == "]" ]; then
+            PLATFORMS='["ubuntu-22.04","macos-14","macos-15","macos-26"]'
+          fi
+
+          echo "Platforms to test: ${PLATFORMS}"
+          echo "platforms=${PLATFORMS}" >> "${GITHUB_OUTPUT}"
+
+  # Build bottles on required platforms
+  build-bottles:
+    if: needs.setup.outputs.has-formulae == 'true'
+    needs: setup
     strategy:
       matrix:
-        os:
-          - ubuntu-22.04
-          - macos-14
-          - macos-15
-          - macos-26
+        os: ${{ fromJson(needs.setup.outputs.platforms) }}
     runs-on: ${{ matrix.os }}
     permissions:
       actions: read
@@ -56,9 +224,6 @@ jobs:
       - name: Brew setup
         run: brew test-bot --fail-fast --only-setup
 
-      - name: Check syntax
-        run: brew test-bot --fail-fast --only-tap-syntax
-
       - name: Base64-encode GITHUB_TOKEN for HOMEBREW_DOCKER_REGISTRY_TOKEN
         id: base64-encode
         if: github.event_name == 'pull_request'
@@ -82,11 +247,52 @@ jobs:
           name: bottles_${{ matrix.os }}
           path: '*.bottle.*'
 
+  # Conclusion job that determines if PR can be merged
+  conclusion:
+    if: always()
+    needs:
+      - setup
+      - build-bottles
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check workflow results
+        env:
+          SETUP_RESULT: ${{ needs.setup.result }}
+          BOTTLES_RESULT: ${{ needs.build-bottles.result }}
+          HAS_FORMULAE: ${{ needs.setup.outputs.has-formulae }}
+        run: |
+          echo "Workflow Status Summary:"
+          echo "  setup: ${SETUP_RESULT}"
+          echo "  build-bottles: ${BOTTLES_RESULT}"
+          echo "  has-formulae: ${HAS_FORMULAE}"
+
+          # If no formulae were changed, workflow should succeed
+          if [ "${HAS_FORMULAE}" == "false" ]; then
+            echo "✅ No formula changes detected - workflow succeeded"
+            exit 0
+          fi
+
+          # Check for failures (not skipped or cancelled)
+          if [ "${SETUP_RESULT}" == "failure" ]; then
+            echo "❌ Setup and detection failed"
+            exit 1
+          fi
+
+          if [ "${BOTTLES_RESULT}" == "failure" ]; then
+            echo "❌ Test bot failed"
+            exit 1
+          fi
+
+          # Success if all required jobs succeeded or were skipped
+          echo "✅ All tests passed - PR can be merged"
+          exit 0
+
   auto-approve-lizardbyte-bot:
     if: |
       github.event_name == 'pull_request' &&
       github.event.pull_request.user.login == 'LizardByte-bot'
-    needs: test-bot
+    needs: conclusion
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
