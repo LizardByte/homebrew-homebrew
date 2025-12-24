@@ -56,12 +56,10 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@main
         with:
           stable: true
-          token: ${{ secrets.GH_BOT_TOKEN }}
 
       - name: Set up git
         uses: Homebrew/actions/git-user-config@main
         with:
-          token: ${{ secrets.GH_BOT_TOKEN }}
           username: ${{ secrets.GH_BOT_NAME }}
 
       - name: Get PR data
@@ -89,15 +87,29 @@ jobs:
             core.setOutput('remote_branch', remoteBranch);
             core.setOutput('remote', remote);
 
+      - name: Checkout PR branch
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: gh pr checkout "${PULL_REQUEST}" --repo "${GITHUB_REPOSITORY}"
+
       - name: Pull bottles
         env:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
-        run: brew pr-pull --debug --tap="${GITHUB_REPOSITORY}" "${PULL_REQUEST}"
+        run: |
+          brew pr-pull \
+            --branch-okay \
+            --committer="${{ secrets.GH_BOT_NAME }} <${{ secrets.GH_BOT_EMAIL }}>" \
+            --debug \
+            --no-cherry-pick \
+            --tap="${GITHUB_REPOSITORY}" \
+            "${PULL_REQUEST}"
 
-      - name: Push commits to PR branch
+      - name: Push commits
         uses: Homebrew/actions/git-try-push@main
         with:
           token: ${{ secrets.GH_BOT_TOKEN }}
@@ -105,7 +117,6 @@ jobs:
           remote: ${{ steps.pr-data.outputs.remote }}
           branch: ${{ steps.pr-data.outputs.branch }}
           remote_branch: ${{ steps.pr-data.outputs.remote_branch }}
-          force: true
         env:
           GIT_COMMITTER_NAME: ${{ secrets.GH_BOT_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.GH_BOT_EMAIL }}
