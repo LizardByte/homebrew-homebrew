@@ -294,13 +294,12 @@ jobs:
       github.event.pull_request.user.login == 'LizardByte-bot'
     needs: conclusion
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
+    permissions: {}
     steps:
       - name: Label PR with pr-pull
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_BOT_TOKEN }}
           script: |
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
