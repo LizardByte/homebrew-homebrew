@@ -120,3 +120,15 @@ jobs:
         env:
           GIT_COMMITTER_NAME: ${{ secrets.GH_BOT_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.GH_BOT_EMAIL }}
+
+      - name: Add bottle-published label
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['bottle-published']
+            });

@@ -247,7 +247,7 @@ jobs:
           name: bottles_${{ matrix.os }}
           path: '*.bottle.*'
 
-  # Conclusion job that determines if PR can be merged
+  # Conclusion job that checks test results
   conclusion:
     if: always()
     needs:
@@ -285,8 +285,56 @@ jobs:
           fi
 
           # Success if all required jobs succeeded or were skipped
-          echo "✅ All tests passed - PR can be merged"
+          echo "✅ All tests passed"
           exit 0
+
+  # Check if bottles have been published (for PRs with formula changes)
+  check-bottle-published:
+    if: always() && github.event_name == 'pull_request'
+    needs:
+      - setup
+      - conclusion
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check for bottle published label
+        uses: actions/github-script@v8
+        env:
+          HAS_FORMULAE: ${{ needs.setup.outputs.has-formulae }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const hasFormulae = process.env.HAS_FORMULAE === 'true';
+            const prNumber = context.issue.number;
+
+            // If no formula changes, pass automatically
+            if (!hasFormulae) {
+              console.log('✅ No formula changes detected - skipping bottle published check');
+              return;
+            }
+
+            console.log(`Checking for bottle-published label on PR #${prNumber}...`);
+
+            // Get PR labels
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const labelNames = labels.map(label => label.name);
+            console.log(`PR labels: ${labelNames.join(', ')}`);
+
+            // Check if bottle published label exists
+            const hasBottlePublished = labelNames.includes('bottle-published');
+
+            if (hasBottlePublished) {
+              console.log('✅ bottle-published label found - PR can be merged');
+            } else {
+              console.log('❌ bottle-published label not found - bottles must be published before merging');
+              throw new Error('bottle-published label not found');
+            }
 
   auto-approve-lizardbyte-bot:
     if: |
