@@ -8,7 +8,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.1210.519"
+    tag: "v2025.1226.120500"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -16,21 +16,24 @@ class SunshineBeta < Formula
   livecheck do
     url :stable
     regex(/^v?(\d+\.\d+\.\d+)$/i)
-    strategy :github_latest do |json, regex|
-      match = json["tag_name"]&.match(regex)
-      next if match.blank?
+    strategy :github_releases do |json, regex|
+      json.map do |release|
+        next if release["draft"]
 
-      match[1]
+        match = release["tag_name"]&.match(regex)
+        next if match.blank?
+
+        match[1]
+      end
     end
   end
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 2
-    sha256 arm64_tahoe:   "f8248c4a0ffe35c4b023b61ca1f70e9137ed5aedb5daca28700ab9df32665678"
-    sha256 arm64_sequoia: "1417835be83e7380ed04b68745b42afaa610a1c28495c27b48903500a16a396e"
-    sha256 arm64_sonoma:  "884aa9009fc6d82687a384725939ebca254ec530484cf63d2ac42d37a29129df"
-    sha256 x86_64_linux:  "d925b9ba6183a5ab27ce7e0af0d2b83534e5d80c4bb6d761704a32edd270b43e"
+    sha256 arm64_tahoe:   "3aaa7947e8760b3b6dd3ab88414a27b74335b30b379006e9297ce3ca8fc1ff22"
+    sha256 arm64_sequoia: "f3f181bbdc15504221418bf26fc7b44f17c07234e2ef6c0c1f1bef479707f3d4"
+    sha256 arm64_sonoma:  "a05de7142ee966d300fa1a850c6601c7903198ff7d976d6e6d5f344d66696549"
+    sha256 x86_64_linux:  "3c9529a661b5043ae828ffc1579d5de3e71a03725d237b55d64d053ccfa50e08"
   end
 
   option "with-docs", "Enable docs"
@@ -92,7 +95,6 @@ class SunshineBeta < Formula
   end
 
   conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
-
   fails_with :clang do
     build 1400
     cause "Requires C++23 support"
@@ -105,8 +107,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2025.1210.519"
-    ENV["COMMIT"] = "eb3afd43df290f51b30f1b8b9bef915f40ca969b"
+    ENV["BUILD_VERSION"] = "2025.1226.120500"
+    ENV["COMMIT"] = "b3a7782647dc782de5dfecfddcc2fb2a843320e4"
 
     if OS.linux?
       # Use GCC because gcov from llvm cannot handle our paths
@@ -216,7 +218,7 @@ class SunshineBeta < Formula
     # test that the binary runs at all
     system bin/"sunshine", "--version"
 
-    if IS_UPSTREAM_REPO
+    if IS_UPSTREAM_REPO && ENV.fetch("HOMEBREW_BOTTLE_BUILD", "false") != "true"
       # run the test suite
       system bin/"test_sunshine", "--gtest_color=yes", "--gtest_output=xml:tests/test_results.xml"
       assert_path_exists File.join(testpath, "tests", "test_results.xml")
