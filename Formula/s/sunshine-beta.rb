@@ -8,7 +8,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.105.75257"
+    tag: "v2026.105.231052"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -30,10 +30,10 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "69d32e254d2c357425adb97f786a3d0b306b3fb076e96c7d97a7360964a6856f"
-    sha256 arm64_sequoia: "94ea936049ba75a97b1961f5b13948d10244bd8d26a347672c9f58c5d9b375ab"
-    sha256 arm64_sonoma:  "65591aa2828f8c944f03f593a4d3ba12388835eb902bb681d450e2084154a977"
-    sha256 x86_64_linux:  "e73b789843fff0f777b7a5b95066763228dcabd5f328aaaec6a2a068410c4ad5"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-docs", "Enable docs"
@@ -107,8 +107,8 @@ class SunshineBeta < Formula
 
   def install
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.105.75257"
-    ENV["COMMIT"] = "5bacfd59ae0053c6e0d8ef7036d2a2f222f29455"
+    ENV["BUILD_VERSION"] = "2026.105.231052"
+    ENV["COMMIT"] = "c9e0bb864ed263da6dd5c2fff5541c268f94cfaf"
 
     if OS.linux?
       # Use GCC because gcov from llvm cannot handle our paths
