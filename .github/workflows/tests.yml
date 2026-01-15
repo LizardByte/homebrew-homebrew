@@ -156,6 +156,7 @@ jobs:
           PLATFORMS="["
           if [ "${NEEDS_LINUX}" == "true" ]; then
             PLATFORMS="${PLATFORMS}\"ubuntu-22.04\","
+            PLATFORMS="${PLATFORMS}\"ubuntu-22.04-arm\","
           fi
           if [ "${NEEDS_MACOS}" == "true" ]; then
             # If specific macOS versions were detected, use only those
