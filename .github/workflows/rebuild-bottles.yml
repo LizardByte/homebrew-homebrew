@@ -1,0 +1,139 @@
+---
+name: Rebuild Bottles
+permissions: {}
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Run weekly on Sunday at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      formula:
+        description: 'Formula name to rebuild (e.g., sunshine, sunshine-beta, cuda@13.1)'
+        required: true
+        type: string
+
+jobs:
+  detect-formulas:
+    name: Detect Formulas
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    outputs:
+      formulas: ${{ steps.detect.outputs.formulas }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Detect formula files
+        id: detect
+        env:
+          INPUT_FORMULA: ${{ github.event.inputs.formula }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]; then
+            # Manual trigger - use the input formula name
+            FORMULAS="[\"${INPUT_FORMULA}\"]"
+          else
+            # Scheduled - find all formula files and extract names
+            FORMULA_FILES=$(find Formula -name '*.rb' -type f)
+            FORMULAS=$(echo "$FORMULA_FILES" | xargs -I {} basename {} .rb | jq -R -s -c 'split("\n")[:-1]')
+          fi
+          echo "formulas=${FORMULAS}" >> "${GITHUB_OUTPUT}"
+          echo "Formulas to rebuild: ${FORMULAS}"
+
+  rebuild:
+    name: Rebuild ${{ matrix.formula }}
+    needs: detect-formulas
+    runs-on: ubuntu-latest
+    env:
+      COMMIT_MESSAGE: 'chore: ${{ matrix.formula }}: rebuild bottles'
+      MATRIX_FORMULA: ${{ matrix.formula }}
+      PR_BRANCH_NAME: bot/update-${{ matrix.formula }}-formula
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        formula: ${{ fromJson(needs.detect-formulas.outputs.formulas) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Find formula file
+        id: find
+        run: |
+          # Find the formula file path from the formula name
+          FORMULA_NAME="${MATRIX_FORMULA}"
+          FORMULA_FILE=$(find Formula -name "${FORMULA_NAME}.rb" -type f | head -n 1)
+
+          if [ -z "${FORMULA_FILE}" ]; then
+            echo "Error: Formula file for '${FORMULA_NAME}' not found"
+            exit 1
+          fi
+
+          echo "formula_file=${FORMULA_FILE}" >> "${GITHUB_OUTPUT}"
+          echo "Found formula file: ${FORMULA_FILE}"
+
+      - name: Update formula with rebuild comment
+        id: update
+        env:
+          FORMULA_FILE: ${{ steps.find.outputs.formula_file }}
+        run: |
+          # Current rebuild number (timestamp-based for uniqueness)
+          REBUILD_NUM=$(date -u +%s)
+          COMMENT="# rebuild: ${REBUILD_NUM}"
+
+          # Check if a rebuild comment already exists
+          if grep -q "^# rebuild:" "${FORMULA_FILE}"; then
+            # Update existing comment
+            sed -i "s/^# rebuild:.*/${COMMENT}/" "${FORMULA_FILE}"
+            echo "action=updated" >> "${GITHUB_OUTPUT}"
+          else
+            # Add new comment at the end of the file
+            echo "${COMMENT}" >> "${FORMULA_FILE}"
+            echo "action=added" >> "${GITHUB_OUTPUT}"
+          fi
+
+          # Show the changes
+          echo "Changes made to ${FORMULA_FILE}:"
+          git diff "${FORMULA_FILE}"
+
+      - name: Push changes
+        uses: actions-js/push@5a7cbd780d82c0c937b5977586e641b2fd94acc5  # v1.5
+        with:
+          author_email: ${{ secrets.GH_BOT_EMAIL }}
+          author_name: ${{ secrets.GH_BOT_NAME }}
+          branch: ${{ env.PR_BRANCH_NAME }}
+          github_token: ${{ secrets.GH_BOT_TOKEN }}
+          message: ${{ env.COMMIT_MESSAGE }}
+          force: true
+
+      - name: Create or update Pull Request
+        env:
+          ACTION: ${{ steps.update.outputs.action }}
+          GH_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
+        run: |
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "${PR_BRANCH_NAME}" --json number --jq '.[0].number' || echo "")
+
+          if [ -z "${EXISTING_PR}" ]; then
+            echo "Creating new PR..."
+            PR_URL=$(gh pr create \
+              --title "${COMMIT_MESSAGE}" \
+              --body "Automatic rebuild bottles for \`${MATRIX_FORMULA}\`." \
+              --head "${PR_BRANCH_NAME}" \
+              --base master)
+            PR_NUMBER=$(echo "${PR_URL}" | grep -oE '[0-9]+$')
+            echo "Created new PR #${PR_NUMBER}: ${PR_URL}"
+
+            # Enable auto-merge
+            echo "Enabling auto-merge for PR #${PR_NUMBER}..."
+            gh pr merge "${PR_NUMBER}" \
+              --auto \
+              --delete-branch \
+              --squash \
+              --subject "${COMMIT_MESSAGE}"
+            echo "Auto-merge enabled"
+          fi
