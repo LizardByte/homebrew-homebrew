@@ -20,8 +20,11 @@ class CudaAT131 < Formula
     sha256 cellar: :any_skip_relocation, x86_64_linux: "da6fe4ebf2bb09d5cc816e612b896306e8ac47c3479c820c1b62de44a31c88d3"
   end
 
-  # Force building from source to avoid bottle-related issues and skip linkage checks
-  pour_bottle? { false }
+  # Force building from source
+  pour_bottle? do
+    reason "CUDA requires building from source to ensure all runtime files are present"
+    satisfy { false }
+  end
 
   depends_on :linux
 
@@ -45,7 +48,8 @@ class CudaAT131 < Formula
            "--no-man-page"
 
     # Only cleanup in our custom tap to satisfy the audit
-    if ENV.fetch("GITHUB_REPOSITORY", "") == "LizardByte/homebrew-homebrew"
+    if build.bottle?
+      ohai "CUDA Cleanup: Removing files for bottle audit compliance"
       # Remove non-executable files from bin directory
       rm prefix/"bin/nvcc.profile" if (prefix/"bin/nvcc.profile").exist?
       rm_r prefix/"bin/crt" if (prefix/"bin/crt").exist?
