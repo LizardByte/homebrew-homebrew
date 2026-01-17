@@ -1,5 +1,6 @@
 ---
 name: Rebuild Bottles
+run-name: Rebuild Bottles (${{ github.event.inputs.formula || 'all' }})
 permissions: {}
 
 on:
