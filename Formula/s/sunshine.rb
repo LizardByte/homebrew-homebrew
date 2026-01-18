@@ -1,5 +1,8 @@
 require "language/node"
 
+# changes that trigger bottle rebuilds
+# - add arm bottles
+
 class Sunshine < Formula
   GCC_VERSION = "14".freeze
   GCC_FORMULA = "gcc@#{GCC_VERSION}".freeze
