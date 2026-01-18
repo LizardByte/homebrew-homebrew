@@ -11,6 +11,11 @@ concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 
+env:
+  CUDA_VERSION: "13.1"
+  # Formula patterns that require CUDA (space-separated glob patterns)
+  CUDA_REQUIRED_PATTERNS: "sunshine*.rb"
+
 jobs:
   # Check syntax and detect which platforms need testing
   setup:
@@ -20,6 +25,7 @@ jobs:
     outputs:
       platforms: ${{ steps.detect.outputs.platforms }}
       has-formulae: ${{ steps.detect.outputs.has-formulae }}
+      changed-files: ${{ steps.detect.outputs.changed-files }}
     steps:
       - name: Set up Homebrew
         id: set-up-homebrew
@@ -67,14 +73,24 @@ jobs:
 
           if [ -z "${CHANGED_FILES}" ]; then
             echo "No formula files changed, skipping tests"
-            echo "has-formulae=false" >> "${GITHUB_OUTPUT}"
-            echo "platforms=[]" >> "${GITHUB_OUTPUT}"
+            {
+              echo "has-formulae=false"
+              echo "platforms=[]"
+              echo "changed-files="
+            } >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
           echo "has-formulae=true" >> "${GITHUB_OUTPUT}"
           echo "Changed formula files:"
           echo "${CHANGED_FILES}"
+
+          # Output changed files for reuse in other jobs (newline-separated list)
+          {
+            echo "changed-files<<EOF"
+            echo "${CHANGED_FILES}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
 
           # Default to empty arrays
           NEEDS_LINUX=false
@@ -233,6 +249,52 @@ jobs:
           base64_token=$(echo -n "${TOKEN}" | base64 | tr -d "\n")
           echo "::add-mask::${base64_token}"
           echo "token=${base64_token}" >> "${GITHUB_OUTPUT}"
+
+      - name: Pre-install cuda from source
+        if: github.event_name == 'pull_request' && runner.os == 'Linux'
+        env:
+          CHANGED_FILES: ${{ needs.setup.outputs.changed-files }}
+        run: |
+          # Check if any changed files match patterns that require CUDA
+          # CHANGED_FILES is passed from the setup job output
+
+          NEEDS_CUDA=false
+
+          # Read CHANGED_FILES into an array, handling newlines properly
+          IFS=$'\n' read -r -d '' -a files_array <<< "${CHANGED_FILES}" || true
+
+          # Check each pattern against changed files
+          for pattern in ${CUDA_REQUIRED_PATTERNS}; do
+            echo "Checking pattern: '${pattern}'"
+            for file in "${files_array[@]}"; do
+              # Skip empty lines
+              [ -z "${file}" ] && continue
+
+              filename=$(basename "${file}")
+              echo "  Checking file: '${file}' (basename: '${filename}')"
+
+              # Use shell pattern matching (pattern must be unquoted for glob matching)
+              # shellcheck disable=SC2254
+              case "${filename}" in
+                ${pattern})
+                  echo "✓ Found file matching CUDA pattern '${pattern}': ${file}"
+                  NEEDS_CUDA=true
+                  break 2
+                  ;;
+              esac
+            done
+          done
+
+          if [ "${NEEDS_CUDA}" == "true" ]; then
+            echo ""
+            echo "Installing CUDA ${CUDA_VERSION} from source for changed sunshine formulas..."
+            # Install cuda from source before brew test-bot runs
+            # This avoids the "cannot be installed from bottle" error during dependency installation
+            brew install --build-from-source "lizardbyte/homebrew/cuda@${CUDA_VERSION}"
+          else
+            echo ""
+            echo "✗ No files matching CUDA patterns (${CUDA_REQUIRED_PATTERNS}) - skipping CUDA installation"
+          fi
 
       - name: Build bottles
         if: github.event_name == 'pull_request'
