@@ -122,3 +122,4 @@ class CudaAT131 < Formula
     assert_path_exists testpath/"test"
   end
 end
+# rebuild: 1768708411
