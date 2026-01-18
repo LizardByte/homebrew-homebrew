@@ -17,14 +17,8 @@ class CudaAT131 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 1
-    sha256 cellar: :any_skip_relocation, x86_64_linux: "d7d4482a8bf92ad367a355d168275674f2323233ea6971de21630a451877c7ea"
-  end
-
-  # Force building from source
-  pour_bottle? do
-    reason "CUDA requires building from source to ensure all runtime files are present"
-    satisfy { false }
+    rebuild 2
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "3a1f7780136a7d5d4fd6035b4b7ce05050f02c80cd8219ee10de6a0ed73ef2b4"
   end
 
   depends_on :linux
@@ -43,39 +37,18 @@ class CudaAT131 < Formula
     system "sh", installer,
            "--silent",
            "--toolkit",
-           "--toolkitpath=#{prefix}",
+           "--toolkitpath=#{libexec}",
            "--no-opengl-libs",
            "--no-drm",
            "--no-man-page"
 
-    # Only cleanup in our custom tap to satisfy the audit
-    if build.bottle?
-      ohai "CUDA Cleanup: Removing files for bottle audit compliance"
-      # Remove non-executable files from bin directory
-      rm prefix/"bin/nvcc.profile" if (prefix/"bin/nvcc.profile").exist?
-      rm_r prefix/"bin/crt" if (prefix/"bin/crt").exist?
+    # list binary files
+    bin_files = Dir[libexec/"bin/*"]
+    ohai "Installed CUDA binaries:"
+    bin_files.each { |f| puts f }
 
-      # Remove binaries built for non-native architectures
-      # Remove 32-bit x86 binaries (not needed on modern 64-bit systems)
-      rm_r prefix/"compute-sanitizer/x86" if (prefix/"compute-sanitizer/x86").exist?
-
-      # Remove 32-bit x86 binaries from nsight-compute as well
-      Pathname.glob(prefix/"nsight-compute-*/target/linux-desktop-glibc_2_11_3-x86").each do |path|
-        rm_r path if path.exist?
-      end
-
-      if Hardware::CPU.intel?
-        # On x86_64, remove ARM binaries
-        Pathname.glob(prefix/"nsight-compute-*/target/linux-desktop-t210-a64").each do |path|
-          rm_r path if path.exist?
-        end
-      elsif Hardware::CPU.arm?
-        # On ARM, remove x86_64 binaries
-        Pathname.glob(prefix/"nsight-compute-*/target/linux-desktop-glibc_2_17_3-x64").each do |path|
-          rm_r path if path.exist?
-        end
-      end
-    end
+    # symlink binary files
+    bin.install_symlink libexec/"bin/nvcc"
   end
 
   def caveats
