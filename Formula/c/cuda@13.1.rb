@@ -34,23 +34,24 @@ class CudaAT131 < Formula
       "cuda_#{version}_#{DRIVER_VERSION}_linux_sbsa.run"
     end
 
+    # set tmp directory variable and create it
+    tmpdir = buildpath/"tmp"
+    tmpdir.mkpath
+
     # Run the CUDA installer in silent mode
     system "sh", installer,
-           "--silent",
-           "--toolkit",
-           "--toolkitpath=#{libexec}",
-           "--no-opengl-libs",
+           "--defaultroot=#{lib}",
            "--no-drm",
-           "--no-man-page"
+           "--no-man-page",
+           "--no-opengl-libs",
+           "--silent",
+           "--tmpdir=#{tmpdir}",
+           "--toolkit",
+           "--toolkitpath=#{libexec}"
 
-    # Symlink directories for CMake CUDA toolkit detection
-    # CMake needs to find the CUDA root with bin/, lib/, include/, etc.
-    lib.install_symlink Dir[libexec/"lib64/*"]
-    include.install_symlink Dir[libexec/"include/*"]
-
-    # Symlink other important CUDA directories that tools might need
-    (prefix/"nvvm").install_symlink Dir[libexec/"nvvm/*"] if (libexec/"nvvm").exist?
-    (prefix/"extras").install_symlink Dir[libexec/"extras/*"] if (libexec/"extras").exist?
+    # NOTE: We do not symlink lib64 or include to avoid conflicts and hacks
+    # Dependent formulae should use CMAKE_CUDA_TOOLKIT_ROOT_DIR=#{libexec}
+    # or set CUDA_HOME=#{libexec} to find libraries and headers
 
     # Create wrapper scripts for CUDA binaries
     # This ensures they can find cuda_runtime.h, nvcc.profile, and other dependencies
@@ -60,6 +61,7 @@ class CudaAT131 < Formula
         #!/bin/bash
         export CUDA_HOME="#{libexec}"
         export PATH="#{libexec}/bin:$PATH"
+        export LD_LIBRARY_PATH="#{libexec}/lib64:$LD_LIBRARY_PATH"
         exec "#{libexec}/bin/#{binary_name}" "$@"
       EOS
       chmod 0755, bin/binary_name
@@ -69,17 +71,22 @@ class CudaAT131 < Formula
   def caveats
     <<~EOS
       CUDA Toolkit #{version} has been installed to:
-        #{libexec}
+        #{opt_libexec}
 
-      The nvcc compiler is available at:
-        #{bin}/nvcc
+      Wrapper scripts for CUDA binaries are available at:
+        #{opt_bin}/nvcc
 
-      Wrapper scripts automatically set CUDA_HOME for you.
+      These wrappers automatically set CUDA_HOME for you.
 
-      For manual configuration, you may set:
-        export CUDA_HOME=#{libexec}
-        export PATH=#{bin}:$PATH
-        export LD_LIBRARY_PATH=#{lib}:$LD_LIBRARY_PATH
+      For CMake projects (sunshine-beta example):
+        cuda_path = Formula["lizardbyte/homebrew/cuda@13.1"]
+        args << "-DCMAKE_CUDA_COMPILER=\#{cuda_path.opt_bin}/nvcc"
+        args << "-DCMAKE_CUDA_TOOLKIT_ROOT_DIR=\#{cuda_path.opt_libexec}"
+
+      For shell/manual configuration:
+        export CUDA_HOME=#{opt_libexec}
+        export PATH=#{opt_bin}:$PATH
+        export LD_LIBRARY_PATH=#{opt_libexec}/lib64:$LD_LIBRARY_PATH
 
       This formula only installs the CUDA Toolkit (compiler and libraries).
       You still need to install the NVIDIA driver separately for your system.
