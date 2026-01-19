@@ -21,6 +21,7 @@ class CudaAT131 < Formula
     sha256 cellar: :any_skip_relocation, x86_64_linux: "3a1f7780136a7d5d4fd6035b4b7ce05050f02c80cd8219ee10de6a0ed73ef2b4"
   end
 
+  depends_on "cmake" => :test
   depends_on :linux
 
   def install
@@ -42,29 +43,34 @@ class CudaAT131 < Formula
            "--no-drm",
            "--no-man-page"
 
-    # list binary files
-    bin_files = Dir[libexec/"bin/*"]
-    ohai "Installed CUDA binaries:"
-    bin_files.each { |f| puts f }
+    # Symlink directories for CMake CUDA toolkit detection
+    # CMake needs to find the CUDA root with bin/, lib/, include/, etc.
+    # Only symlink actual executables to bin/ (exclude config files like nvcc.profile)
+    bin.install_symlink Dir[libexec/"bin/*"].select { |f| File.file?(f) && File.executable?(f) }
+    lib.install_symlink Dir[libexec/"lib64/*"]
+    include.install_symlink Dir[libexec/"include/*"]
 
-    # symlink binary files
-    bin.install_symlink libexec/"bin/nvcc"
+    # Symlink other important CUDA directories that tools might need
+    (prefix/"nvvm").install_symlink Dir[libexec/"nvvm/*"] if (libexec/"nvvm").exist?
+    (prefix/"extras").install_symlink Dir[libexec/"extras/*"] if (libexec/"extras").exist?
   end
 
   def caveats
     <<~EOS
       CUDA Toolkit #{version} has been installed to:
-        #{prefix}
+        #{libexec}
 
       The nvcc compiler is available at:
         #{bin}/nvcc
 
       To use CUDA in your projects, you may need to set the following environment variables:
-        export CUDA_HOME=#{prefix}
+        export CUDA_HOME=#{libexec}
         export PATH=#{bin}:$PATH
         export LD_LIBRARY_PATH=#{lib}:$LD_LIBRARY_PATH
 
-      Note: This formula only installs the CUDA Toolkit (compiler and libraries).
+      NOTE: CUDA_HOME points to libexec where nvcc.profile and other config files are located.
+
+      This formula only installs the CUDA Toolkit (compiler and libraries).
       You still need to install the NVIDIA driver separately for your system.
 
       Verify your installation with:
@@ -93,5 +99,26 @@ class CudaAT131 < Formula
     # Compile the test program
     system bin/"nvcc", "test.cu", "-o", "test"
     assert_path_exists testpath/"test"
+
+    # Test that CMake can find the CUDA toolkit
+    # This verifies that cmake_cuda_find_toolkit works correctly
+    (testpath/"CMakeLists.txt").write <<~EOS
+      cmake_minimum_required(VERSION 3.18)
+      project(CUDATest LANGUAGES CXX CUDA)
+
+      message(STATUS "CUDA Toolkit Root: ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+      message(STATUS "CUDA Compiler: ${CMAKE_CUDA_COMPILER}")
+
+      add_executable(cuda_test test.cu)
+    EOS
+
+    # Try to configure the CMake project
+    # This will fail if CMake cannot find the CUDA library root
+    system "cmake", "-S", testpath, "-B", testpath/"build",
+           "-DCMAKE_CUDA_COMPILER=#{bin}/nvcc",
+           "-DCMAKE_CUDA_TOOLKIT_ROOT_DIR=#{libexec}"
+
+    # Verify CMake found the CUDA toolkit
+    assert_path_exists testpath/"build/CMakeCache.txt"
   end
 end
