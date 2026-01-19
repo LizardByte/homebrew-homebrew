@@ -17,8 +17,8 @@ class CudaAT131 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 3
-    sha256 cellar: :any_skip_relocation, x86_64_linux: "dbc2fe792ce4a748642a2386176e2944975201fbbcaab487ff716281f8a74675"
+    rebuild 4
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "6e14db406f1fbdf8d65c41c47e557aa62dfcd1202d44692afe69b872e8174916"
   end
 
   depends_on "cmake" => :test
@@ -45,14 +45,25 @@ class CudaAT131 < Formula
 
     # Symlink directories for CMake CUDA toolkit detection
     # CMake needs to find the CUDA root with bin/, lib/, include/, etc.
-    # Only symlink actual executables to bin/ (exclude config files like nvcc.profile)
-    bin.install_symlink Dir[libexec/"bin/*"].select { |f| File.file?(f) && File.executable?(f) }
     lib.install_symlink Dir[libexec/"lib64/*"]
     include.install_symlink Dir[libexec/"include/*"]
 
     # Symlink other important CUDA directories that tools might need
     (prefix/"nvvm").install_symlink Dir[libexec/"nvvm/*"] if (libexec/"nvvm").exist?
     (prefix/"extras").install_symlink Dir[libexec/"extras/*"] if (libexec/"extras").exist?
+
+    # Create wrapper scripts for CUDA binaries
+    # This ensures they can find cuda_runtime.h, nvcc.profile, and other dependencies
+    Dir[libexec/"bin/*"].select { |f| File.file?(f) && File.executable?(f) }.each do |exe|
+      binary_name = File.basename(exe)
+      (bin/binary_name).write <<~EOS
+        #!/bin/bash
+        export CUDA_HOME="#{libexec}"
+        export PATH="#{libexec}/bin:$PATH"
+        exec "#{libexec}/bin/#{binary_name}" "$@"
+      EOS
+      chmod 0755, bin/binary_name
+    end
   end
 
   def caveats
@@ -63,12 +74,12 @@ class CudaAT131 < Formula
       The nvcc compiler is available at:
         #{bin}/nvcc
 
-      To use CUDA in your projects, you may need to set the following environment variables:
+      Wrapper scripts automatically set CUDA_HOME for you.
+
+      For manual configuration, you may set:
         export CUDA_HOME=#{libexec}
         export PATH=#{bin}:$PATH
         export LD_LIBRARY_PATH=#{lib}:$LD_LIBRARY_PATH
-
-      NOTE: CUDA_HOME points to libexec where nvcc.profile and other config files are located.
 
       This formula only installs the CUDA Toolkit (compiler and libraries).
       You still need to install the NVIDIA driver separately for your system.
