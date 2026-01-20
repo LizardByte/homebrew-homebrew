@@ -36,7 +36,16 @@ jobs:
           else
             # Scheduled - find all formula files and extract names
             FORMULA_FILES=$(find Formula -name '*.rb' -type f)
-            FORMULAS=$(echo "$FORMULA_FILES" | xargs -I {} basename {} .rb | jq -R -s -c 'split("\n")[:-1]')
+            ALL_FORMULAS=$(echo "$FORMULA_FILES" | xargs -I {} basename {} .rb | jq -R -s -c 'split("\n")[:-1]')
+
+            # Load skip list
+            SKIP_LIST=$(jq -c '.formulas' ci_config/rebuild_bottles_skiplist.json)
+
+            # Filter out formulas in the skip list
+            FORMULAS=$(echo "$ALL_FORMULAS" | jq -c --argjson skip "$SKIP_LIST" '. - $skip')
+
+            echo "All formulas: ${ALL_FORMULAS}"
+            echo "Skip list: ${SKIP_LIST}"
           fi
           echo "formulas=${FORMULAS}" >> "${GITHUB_OUTPUT}"
           echo "Formulas to rebuild: ${FORMULAS}"
