@@ -55,16 +55,49 @@ jobs:
           # Get the tap repository path
           TAP_PATH="$(brew --repository "${GITHUB_REPOSITORY}")"
 
-          # Detect changed formula files
+          # Detect changed files in Formula/ and lib/ directories
           # We check manually rather than relying solely on brew test-bot --only-formulae-detect
           # because we need to analyze the specific formula files to determine platform requirements
           if [ "${GITHUB_EVENT_NAME}" == "pull_request" ]; then
-            CHANGED_FILES=$(git -C "${TAP_PATH}" diff --name-only \
-              "${BASE_SHA}" "${HEAD_SHA}" | grep '^Formula/' || true)
+            ALL_CHANGED=$(git -C "${TAP_PATH}" diff --name-only \
+              "${BASE_SHA}" "${HEAD_SHA}" || true)
           else
-            CHANGED_FILES=$(git -C "${TAP_PATH}" diff --name-only \
-              "${BEFORE_SHA}" "${HEAD_SHA}" | grep '^Formula/' || true)
+            ALL_CHANGED=$(git -C "${TAP_PATH}" diff --name-only \
+              "${BEFORE_SHA}" "${HEAD_SHA}" || true)
           fi
+
+          # Get directly changed formula files
+          CHANGED_FORMULAE=$(echo "${ALL_CHANGED}" | grep '^Formula/' || true)
+
+          # Get changed lib files
+          CHANGED_LIB=$(echo "${ALL_CHANGED}" | grep '^lib/' || true)
+
+          # If lib files changed, find all formulae that require them
+          if [ -n "${CHANGED_LIB}" ]; then
+            echo "Changed lib files detected:"
+            echo "${CHANGED_LIB}"
+
+            # For each changed lib file, find formulas that require it
+            for lib_file in ${CHANGED_LIB}; do
+              lib_basename=$(basename "${lib_file}")
+              echo "Finding formulae that use ${lib_basename}..."
+
+              # Search for require_relative statements referencing this lib file
+              # Pattern: require_relative "../../lib/filename" or similar
+              DEPENDENT_FORMULAE=$(find "${TAP_PATH}/Formula" -name "*.rb" -type f -exec \
+                grep -l "require_relative.*${lib_basename%.rb}" {} \; | \
+                sed "s|${TAP_PATH}/||" || true)
+
+              if [ -n "${DEPENDENT_FORMULAE}" ]; then
+                echo "Found dependent formulae:"
+                echo "${DEPENDENT_FORMULAE}"
+                CHANGED_FORMULAE=$(printf "%s\n%s" "${CHANGED_FORMULAE}" "${DEPENDENT_FORMULAE}" | sort -u)
+              fi
+            done
+          fi
+
+          # Remove empty lines
+          CHANGED_FILES=$(echo "${CHANGED_FORMULAE}" | sed '/^$/d')
 
           if [ -z "${CHANGED_FILES}" ]; then
             echo "No formula files changed, skipping tests"
@@ -77,7 +110,7 @@ jobs:
           fi
 
           echo "has-formulae=true" >> "${GITHUB_OUTPUT}"
-          echo "Changed formula files:"
+          echo "Formula files to test:"
           echo "${CHANGED_FILES}"
 
           # Output changed files for reuse in other jobs (newline-separated list)
@@ -101,47 +134,83 @@ jobs:
               HAS_LINUX_DEPENDS=false
               HAS_MACOS_DEPENDS=false
 
-              # Check if formula has Linux dependency
-              if grep -q 'depends_on :linux' "${FULL_PATH}"; then
-                HAS_LINUX_DEPENDS=true
-              fi
+              # Build list of files to check for dependencies
+              FILES_TO_CHECK="${FULL_PATH}"
 
-              # Check if formula has macOS dependency (including version-specific)
-              if grep -qE 'depends_on :macos|depends_on macos:' "${FULL_PATH}"; then
-                HAS_MACOS_DEPENDS=true
+              # If formula includes a module, also check the module file for dependencies
+              if grep -q 'require_relative.*lib/' "${FULL_PATH}"; then
+                # Extract the lib file path
+                LIB_RELATIVE=$(grep -oE "require_relative ['\"].*lib/[^'\"]+['\"]" "${FULL_PATH}" | \
+                  sed "s/require_relative ['\"]//; s/['\"]//g" | head -n 1 || true)
 
-                # Extract specific macOS versions if specified
-                # Pattern: depends_on macos: :ventura, depends_on macos: :sonoma, etc.
-                if grep -qE 'depends_on macos: :' "${FULL_PATH}"; then
-                  # Extract the macOS version(s)
-                  MACOS_VERSION_MATCHES=$(grep -oE 'depends_on macos: :[a-z_]+' "${FULL_PATH}" | \
-                    sed 's/depends_on macos: ://' || true)
+                if [ -n "${LIB_RELATIVE}" ]; then
+                  # Convert relative path to absolute path
+                  # Use realpath or manual resolution since formulas can be in subdirectories
+                  # Formula/c/cuda@13.1.rb with ../../lib/cuda_formula.rb -> lib/cuda_formula.rb
+                  FORMULA_DIR="${TAP_PATH}/$(dirname "${file}")"
+                  LIB_FILE=$(cd "${FORMULA_DIR}" && realpath -m "${LIB_RELATIVE}.rb" 2>/dev/null \
+                    || echo "${TAP_PATH}/${LIB_RELATIVE}.rb")
 
-                  for version in ${MACOS_VERSION_MATCHES}; do
-                    case "${version}" in
-                      ventura)
-                        # macOS 13 Ventura - not commonly available in GitHub Actions
-                        MACOS_VERSIONS+=("macos-13")
-                        ;;
-                      sonoma)
-                        # macOS 14 Sonoma
-                        MACOS_VERSIONS+=("macos-14")
-                        ;;
-                      sequoia)
-                        # macOS 15 Sequoia
-                        MACOS_VERSIONS+=("macos-15")
-                        ;;
-                      tahoe)
-                        # macOS 16 Tahoe
-                        MACOS_VERSIONS+=("macos-26")
-                        ;;
-                      *)
-                        echo "  -> Unknown macOS version: ${version}, will use all macOS runners"
-                        ;;
-                    esac
-                  done
+                  # Fallback: if realpath fails, manually resolve ../../lib/file -> lib/file
+                  if [ ! -f "${LIB_FILE}" ]; then
+                    LIB_FILE="${TAP_PATH}/${LIB_RELATIVE#../../}.rb"
+                  fi
+
+                  if [ -f "${LIB_FILE}" ]; then
+                    echo "  -> Also checking included lib file: ${LIB_FILE}"
+                    FILES_TO_CHECK="${FILES_TO_CHECK} ${LIB_FILE}"
+                  else
+                    echo "  -> Warning: Could not find lib file: ${LIB_FILE}"
+                  fi
                 fi
               fi
+
+              # Check all relevant files for Linux dependency
+              for check_file in ${FILES_TO_CHECK}; do
+                if grep -q 'depends_on :linux' "${check_file}"; then
+                  HAS_LINUX_DEPENDS=true
+                  break
+                fi
+              done
+
+              # Check all relevant files for macOS dependency
+              for check_file in ${FILES_TO_CHECK}; do
+                if grep -qE 'depends_on :macos|depends_on macos:' "${check_file}"; then
+                  HAS_MACOS_DEPENDS=true
+
+                  # Extract specific macOS versions if specified
+                  # Pattern: depends_on macos: :ventura, depends_on macos: :sonoma, etc.
+                  if grep -qE 'depends_on macos: :' "${check_file}"; then
+                    # Extract the macOS version(s)
+                    MACOS_VERSION_MATCHES=$(grep -oE 'depends_on macos: :[a-z_]+' "${check_file}" | \
+                      sed 's/depends_on macos: ://' || true)
+
+                    for version in ${MACOS_VERSION_MATCHES}; do
+                      case "${version}" in
+                        ventura)
+                          # macOS 13 Ventura - not commonly available in GitHub Actions
+                          MACOS_VERSIONS+=("macos-13")
+                          ;;
+                        sonoma)
+                          # macOS 14 Sonoma
+                          MACOS_VERSIONS+=("macos-14")
+                          ;;
+                        sequoia)
+                          # macOS 15 Sequoia
+                          MACOS_VERSIONS+=("macos-15")
+                          ;;
+                        tahoe)
+                          # macOS 16 Tahoe
+                          MACOS_VERSIONS+=("macos-26")
+                          ;;
+                        *)
+                          echo "  -> Unknown macOS version: ${version}, will use all macOS runners"
+                          ;;
+                      esac
+                    done
+                  fi
+                fi
+              done
 
               # Determine platform requirements
               if [ "${HAS_LINUX_DEPENDS}" == "true" ] && [ "${HAS_MACOS_DEPENDS}" == "false" ]; then
