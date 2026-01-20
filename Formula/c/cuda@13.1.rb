@@ -1,8 +1,8 @@
 class CudaAT131 < Formula
-  CUDA_VERSION = "13.1.0".freeze
-  DRIVER_VERSION = "590.44.01".freeze
-  INTEL_SHA256 = "6b4fdf2694b3d7afbc526f26412b4cf4f050b202324455053307310f53b323a7".freeze
-  ARM_SHA256 = "06cda49a7031b1c99f784237be5c852619379cbba9555036045044b9ddc99240".freeze
+  CUDA_VERSION = "13.1.1".freeze
+  DRIVER_VERSION = "590.48.01".freeze
+  INTEL_SHA256 = "24ff323723722781436804b392a48f691cb40de9808095d3e2192d0db6dfb8e4".freeze
+  ARM_SHA256 = "8adcd5d4b3e1e70f7420959b97514c0c97ec729da248d54902174c4d229bfd2c".freeze
 
   desc "NVIDIA CUDA Toolkit - GPU-accelerated library and nvcc compiler"
   homepage "https://developer.nvidia.com/cuda-toolkit"
