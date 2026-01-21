@@ -356,10 +356,121 @@ jobs:
           echo "token=${base64_token}" >> "${GITHUB_OUTPUT}"
 
       - name: Build bottles
+        id: build-bottles
         if: github.event_name == 'pull_request'
         env:
           HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
         run: brew test-bot --fail-fast --only-formulae --root-url=https://ghcr.io/v2/lizardbyte/homebrew
+
+      - name: Debug linkage on failure
+        if: always() && failure() && steps.build-bottles.outcome == 'failure'
+        run: |
+          echo "==> Build bottles step failed, running linkage diagnostics..."
+
+          # Detect which formulae are being tested
+          if [ -n "${{ needs.setup.outputs.changed-files }}" ]; then
+            CHANGED_FILES="${{ needs.setup.outputs.changed-files }}"
+            echo "Changed formula files:"
+            echo "${CHANGED_FILES}"
+
+            for file in ${CHANGED_FILES}; do
+              # Extract formula name from path (e.g., Formula/c/cuda@13.1.rb -> cuda@13.1)
+              FORMULA_NAME=$(basename "${file}" .rb)
+              FULL_FORMULA_NAME="lizardbyte/homebrew/${FORMULA_NAME}"
+
+              echo ""
+              echo "================================================================================"
+              echo "Debugging linkage for: ${FULL_FORMULA_NAME}"
+              echo "================================================================================"
+
+              # Check if formula is installed
+              if brew list --formula | grep -q "^${FORMULA_NAME}$"; then
+                echo ""
+                echo "==> Formula info:"
+                brew info "${FULL_FORMULA_NAME}" || true
+
+                echo ""
+                echo "==> Installed files:"
+                brew list --verbose "${FULL_FORMULA_NAME}" || true
+
+                echo ""
+                echo "==> Full linkage report:"
+                brew linkage "${FULL_FORMULA_NAME}" || true
+
+                echo ""
+                echo "==> Checking binary dependencies with ldd:"
+                # Find all executables and shared libraries
+                CELLAR_PATH="$(brew --cellar)/${FORMULA_NAME}"
+                if [ -d "${CELLAR_PATH}" ]; then
+                  # Find all ELF binaries and libraries
+                  find "${CELLAR_PATH}" -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
+                      head -20 | while read -r binary; do
+                    if file "${binary}" | grep -q "ELF"; then
+                      echo ""
+                      echo "Binary: ${binary}"
+                      ldd "${binary}" 2>&1 | head -50 || true
+                    fi
+                  done
+                fi
+
+                echo ""
+                echo "==> System library paths:"
+                echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-<not set>}"
+                ldconfig -p 2>&1 | grep -E "(libGL|libQt|libcuda|libpython)" || true
+
+                echo ""
+                echo "==> Brew library paths:"
+                find "$(brew --prefix)/lib" -maxdepth 1 -type f -o -type l 2>/dev/null | head -30 || true
+
+              else
+                echo "Formula ${FORMULA_NAME} is not installed - may have been uninstalled after failure"
+
+                # Try to find bottle files
+                echo ""
+                echo "==> Looking for bottle files:"
+                find . -maxdepth 1 -name "*.bottle.*" -type f 2>/dev/null || echo "No bottle files found"
+
+                # Try to install the bottle if it exists
+                BOTTLE_FILE=$(find . -maxdepth 1 -name "${FORMULA_NAME}--*.bottle.*.tar.gz" -type f 2>/dev/null | \
+                    head -1)
+                if [ -n "${BOTTLE_FILE}" ] && [ -f "${BOTTLE_FILE}" ]; then
+                  echo ""
+                  echo "==> Found bottle: ${BOTTLE_FILE}"
+                  echo "==> Attempting to install bottle for debugging..."
+                  brew install "${BOTTLE_FILE}" || true
+
+                  if brew list --formula | grep -q "^${FORMULA_NAME}$"; then
+                    echo ""
+                    echo "==> Linkage after bottle install:"
+                    brew linkage "${FULL_FORMULA_NAME}" || true
+
+                    echo ""
+                    echo "==> Testing specific binaries from bottle:"
+                    CELLAR_PATH="$(brew --cellar)/${FORMULA_NAME}"
+                    if [ -d "${CELLAR_PATH}" ]; then
+                      find "${CELLAR_PATH}" -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
+                          head -10 | while read -r binary; do
+                        if file "${binary}" | grep -q "ELF"; then
+                          echo ""
+                          echo "Binary: ${binary}"
+                          ldd "${binary}" 2>&1 | head -30 || true
+                        fi
+                      done
+                    fi
+                  fi
+                fi
+              fi
+            done
+          else
+            echo "No changed files information available"
+          fi
+
+          echo ""
+          echo "==> Linkage debugging complete"
+
+      - name: Fail if build failed
+        if: steps.build-bottles.outcome == 'failure'
+        run: exit 1
 
       - name: Upload bottles as artifact
         if: always() && github.event_name == 'pull_request'
