@@ -11,7 +11,7 @@ module CudaFormula
       # Default livecheck - will be overridden by setup_livecheck if CUDA_VERSION is defined
       livecheck do
         url "https://developer.nvidia.com/cuda-toolkit-archive"
-        regex(%r{href="/cuda-downloads">CUDA\s+Toolkit\s+v?(\d+\.\d+\.[\d.]+)}i)
+        regex(%r{href="/cuda-(?:downloads|[\d-]+-download-archive)">CUDA\s+Toolkit\s+v?(\d+\.\d+\.[\d.]+)}i)
       end
     end
   end
@@ -24,7 +24,8 @@ module CudaFormula
     formula_class.class_eval do
       livecheck do
         url "https://developer.nvidia.com/cuda-toolkit-archive"
-        regex(%r{href="/cuda-downloads">CUDA\s+Toolkit\s+v?(#{Regexp.escape(major_minor)}\.[\d.]+)}i)
+        regex(%r{href="/cuda-(?:downloads|[\d-]+-download-archive)">CUDA\s+Toolkit\s+v?
+                 (#{Regexp.escape(major_minor)}\.[\d.]+)}ix)
       end
     end
   end

@@ -1,5 +1,6 @@
 {
   "formulas": [
+    "cuda@13.0",
     "cuda@13.1"
   ]
 }
