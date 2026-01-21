@@ -21,6 +21,7 @@ jobs:
       platforms: ${{ steps.detect.outputs.platforms }}
       has-formulae: ${{ steps.detect.outputs.has-formulae }}
       changed-files: ${{ steps.detect.outputs.changed-files }}
+      disable-failfast: ${{ steps.detect.outputs.disable-failfast }}
     steps:
       - name: Set up Homebrew
         id: set-up-homebrew
@@ -119,6 +120,28 @@ jobs:
             echo "${CHANGED_FILES}"
             echo "EOF"
           } >> "${GITHUB_OUTPUT}"
+
+          # Check if any changed formula is in the failfast skiplist
+          DISABLE_FAILFAST=false
+          SKIPLIST_FILE="${TAP_PATH}/ci_config/failfast_skiplist.json"
+
+          if [ -f "${SKIPLIST_FILE}" ]; then
+            echo "Checking formulas against failfast skiplist..."
+
+            for file in ${CHANGED_FILES}; do
+              # Extract formula name from path (e.g., Formula/c/cuda@13.1.rb -> cuda@13.1)
+              FORMULA_NAME=$(basename "${file}" .rb)
+
+              # Check if this formula is in the skiplist
+              if grep -q "\"${FORMULA_NAME}\"" "${SKIPLIST_FILE}"; then
+                echo "  -> ${FORMULA_NAME} is in failfast skiplist"
+                DISABLE_FAILFAST=true
+              fi
+            done
+          fi
+
+          echo "disable-failfast=${DISABLE_FAILFAST}" >> "${GITHUB_OUTPUT}"
+          echo "Failfast disabled: ${DISABLE_FAILFAST}"
 
           # Default to empty arrays
           NEEDS_LINUX=false
@@ -267,6 +290,7 @@ jobs:
     if: needs.setup.outputs.has-formulae == 'true'
     needs: setup
     strategy:
+      fail-fast: ${{ needs.setup.outputs.disable-failfast == 'false' }}
       matrix:
         os: ${{ fromJson(needs.setup.outputs.platforms) }}
     runs-on: ${{ matrix.os }}
