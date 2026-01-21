@@ -10,7 +10,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.120.204702"
+    tag: "v2026.121.33416"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -32,10 +32,10 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "526d44bc339aef531f7a2ed222e327a815752abaa9470cc1bc9b30b1301c3f05"
-    sha256 arm64_sequoia: "b374ef4c82c63d48f19437a2454f512d5e8fd632c40195332f46bbaac3ab692c"
-    sha256 arm64_sonoma:  "f54c156bcbc67d8b615aa7cfeda8121f11612e17a49de3f0fc52f5539254f406"
-    sha256 x86_64_linux:  "3f461639f224c5eb085087df2340e3e0bf6fc39192af6660b3c5b1f7441d43be"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-static-boost", "Enable static link of Boost libraries"
@@ -109,8 +109,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.120.204702"
-    ENV["COMMIT"] = "19a6301140b6138aa786868034dffd27d530cc77"
+    ENV["BUILD_VERSION"] = "2026.121.33416"
+    ENV["COMMIT"] = "ff770d60c5af321b4100ecb8bd580839d10aaf9e"
 
     setup_linux_gcc_environment if OS.linux?
   end
