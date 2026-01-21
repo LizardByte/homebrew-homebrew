@@ -236,6 +236,7 @@ jobs:
           PLATFORMS="["
           if [ "${NEEDS_LINUX}" == "true" ]; then
             PLATFORMS="${PLATFORMS}\"ubuntu-22.04\","
+            PLATFORMS="${PLATFORMS}\"ubuntu-22.04-arm\","
           fi
           if [ "${NEEDS_MACOS}" == "true" ]; then
             # If specific macOS versions were detected, use only those
@@ -297,6 +298,22 @@ jobs:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
           key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
           restore-keys: ${{ matrix.os }}-rubygems-
+
+      # TODO: periodically check if this gets fixed in Homebrew
+      # https://github.com/orgs/Homebrew/discussions/6615
+      # https://github.com/ruby/rubygems/issues/7983
+      - name: Fix ruby gems directory permissions
+        if: matrix.os == 'ubuntu-22.04-arm'
+        run: |
+          # Fix ownership first so current user can write, then remove world-writable
+          BUNDLE_DIR="$(brew --prefix)/Homebrew/Library/Homebrew/vendor/bundle/ruby"
+          if [ -d "${BUNDLE_DIR}" ]; then
+            # Take ownership so we can write to it
+            sudo chown -R "$(whoami):$(id -gn)" "${BUNDLE_DIR}"
+            # Remove world-writable permissions to satisfy Bundler security
+            chmod -R o-w "${BUNDLE_DIR}"
+            echo "Fixed ownership and permissions for ${BUNDLE_DIR}"
+          fi
 
       - name: Brew cleanup before
         run: brew test-bot --fail-fast --only-cleanup-before
