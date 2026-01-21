@@ -32,10 +32,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "7ca8ddbbb735a5fdc81b5d50b121028922897a1ca3da93407d3f0a8fdfae2189"
-    sha256 arm64_sequoia: "ddd5c651544be4e49bc87013553e3700356dc486bd93ee339d7ded942f15a100"
-    sha256 arm64_sonoma:  "99cd41573d379c91e7f5f358f6ec6d6f3d67b64f723a83ea3fec97805bdf35e2"
-    sha256 x86_64_linux:  "4f2d5b961dc51d9877a1a67a870a298423955f87b7aba9aa08798013d8104816"
+    rebuild 1
+    sha256 arm64_tahoe:   "d62d1e2588cc519e0a14236492e5b249d45845ae39fd8effb1b3cea8f600c3b0"
+    sha256 arm64_sequoia: "905e5b7577cb42d6abf9bf97130832328e977b0af0d07e869fd4765af54fc860"
+    sha256 arm64_sonoma:  "09a6e1c0caf048002e0ca68ba74b27a0ef82add01f9eeee5c32a3c33f55f6adc"
+    sha256 x86_64_linux:  "b34a84009da7ce02a79308a727c54f5b58e6c7d0efc61a74420885b59ebe53b7"
   end
 
   option "with-static-boost", "Enable static link of Boost libraries"
