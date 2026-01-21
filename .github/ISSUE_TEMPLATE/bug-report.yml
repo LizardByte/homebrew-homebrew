@@ -21,6 +21,7 @@ body:
       label: Formula Name
       description: Which Formula are you trying to install?
       options:
+        - cuda@13.0
         - cuda@13.1
         - sunshine
         - sunshine-beta
