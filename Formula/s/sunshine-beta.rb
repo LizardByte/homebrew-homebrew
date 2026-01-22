@@ -38,6 +38,7 @@ class SunshineBeta < Formula
     sha256 x86_64_linux:  "4f2d5b961dc51d9877a1a67a870a298423955f87b7aba9aa08798013d8104816"
   end
 
+  option "with-cuda", "Enable CUDA support (Linux only)"
   option "with-static-boost", "Enable static link of Boost libraries"
   option "without-static-boost", "Disable static link of Boost libraries" # default option
 
@@ -60,7 +61,7 @@ class SunshineBeta < Formula
 
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
-    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => [:build, :recommended]
+    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => :build if build.with? "cuda"
     depends_on "at-spi2-core"
     depends_on "avahi"
     depends_on "ayatana-ido"
