@@ -10,7 +10,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.121.232953"
+    tag: "v2026.122.133140"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -32,18 +32,21 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "a815abf857fe636c239acdd95c52de84276000debae313255f01979a10a6cddb"
-    sha256 arm64_sequoia: "dd309165b56bf8438cc50bc202e6c0659f9f8b0345c2e7f0b6cabb02614f3ca8"
-    sha256 arm64_sonoma:  "833676f3627ef0eb7dc8d0c6488cf2255b0f2b61b0fd906e94748ee35c4207fd"
-    sha256 x86_64_linux:  "cd15f3e318e0a7f103dd540a518246e3c24657140c78b65d6190f559d2845a83"
+    sha256 arm64_tahoe:   "f8deac6d61df1e6c8b6a509a4429c7339d9e0fd9aaa11009098170174f4b8fe0"
+    sha256 arm64_sequoia: "775e72bcaec1289b416c1d6fdae593fb4842b3ef162c00f7dc8538accd28bc03"
+    sha256 arm64_sonoma:  "e2f2a7f1d98c1194e1b2f3cd255275dcfd9abcd935e48442f50c1def88b0d467"
+    sha256 arm64_linux:   "df35dee6a1f99c7d4cba03e207ce846c5240344639c6b2afc466b0873ab837ff"
+    sha256 x86_64_linux:  "ed3a3ed6d04c6ac6061683b01776722a08ab9183d1aeb21b9a1ce51cecfaebef"
   end
 
+  option "with-cuda", "Enable CUDA support (Linux only)"
+  option "with-docs", "Enable docs build"
   option "with-static-boost", "Enable static link of Boost libraries"
   option "without-static-boost", "Disable static link of Boost libraries" # default option
 
   depends_on "cmake" => :build
-  depends_on "doxygen" => [:build, :recommended]
-  depends_on "graphviz" => :build if build.with? "doxygen"
+  depends_on "doxygen" => :build if build.with? "docs"
+  depends_on "graphviz" => :build if build.with? "docs"
   depends_on "node" => :build
   depends_on "pkgconf" => :build
   depends_on "gcovr" => :test
@@ -60,7 +63,7 @@ class SunshineBeta < Formula
 
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
-    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => [:build, :recommended]
+    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => :build if build.with? "cuda"
     depends_on "at-spi2-core"
     depends_on "avahi"
     depends_on "ayatana-ido"
@@ -109,8 +112,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.121.232953"
-    ENV["COMMIT"] = "aca5d23f4e917b41a5f4de4dd163e270f603a10e"
+    ENV["BUILD_VERSION"] = "2026.122.133140"
+    ENV["COMMIT"] = "517be368be7b99b164aba546cae7691b6fa74759"
 
     setup_linux_gcc_environment if OS.linux?
   end
@@ -148,7 +151,7 @@ class SunshineBeta < Formula
   end
 
   def add_docs_args(args)
-    if build.with? "doxygen"
+    if build.with? "docs"
       ohai "Building docs: enabled"
       args << "-DBUILD_DOCS=ON"
     else
