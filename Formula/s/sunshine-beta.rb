@@ -10,7 +10,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.131.140325"
+    tag: "v2026.204.180221"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -32,12 +32,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 1
-    sha256 arm64_tahoe:   "cf4c4750b92b7e8a3b2da5e30afc5c73ef66d9cc079a64c1b53add42eb6b69f3"
-    sha256 arm64_sequoia: "5885fc1d3fba7b227b3779d5d6c719dcaa36fcbd4fa46998534bcda240e8c9d0"
-    sha256 arm64_sonoma:  "1c655f82de3d6f0638249ae9c9a9a675a29688d16113ebaf0ec48ac1b7f6bdf2"
-    sha256 arm64_linux:   "f05e949e30cfb42395d789325797bff659e12080a246a57fb1780204b7adffbb"
-    sha256 x86_64_linux:  "1b9ff2636996ea9fa729c81106e574a1cd7a37b68c53a929645646d04926f970"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_linux:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-cuda", "Enable CUDA support (Linux only)"
@@ -95,6 +94,7 @@ class SunshineBeta < Formula
     depends_on "mesa"
     depends_on "numactl"
     depends_on "pango"
+    depends_on "pipewire"
     depends_on "pulseaudio"
     depends_on "systemd"
     depends_on "wayland"
@@ -113,8 +113,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.131.140325"
-    ENV["COMMIT"] = "f59e6aacc48faecb62f2167f4b507e6fcd2a225f"
+    ENV["BUILD_VERSION"] = "2026.204.180221"
+    ENV["COMMIT"] = "22065bfeec7d9af41747349b609c4770f068c17a"
 
     setup_linux_gcc_environment if OS.linux?
   end
@@ -308,4 +308,3 @@ class SunshineBeta < Formula
     end
   end
 end
-# rebuild: 1769920438
