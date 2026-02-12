@@ -31,7 +31,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Homebrew Bundler RubyGems
-        uses: actions/cache@v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
         with:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
           key: ubuntu-latest-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
@@ -303,7 +303,7 @@ jobs:
     steps:
       - name: More space
         if: runner.os == 'Linux'
-        uses: LizardByte/actions/actions/more_space@v2026.212.22356
+        uses: LizardByte/actions/actions/more_space@9bf3ef783775e17fe6b8dde3585d94ec570b93c2  # v2026.212.22356
         with:
           analyze-space-savings: true
           clean-all: true
@@ -317,7 +317,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Homebrew Bundler RubyGems
-        uses: actions/cache@v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
         with:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
           key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
@@ -363,7 +363,7 @@ jobs:
 
       - name: Upload bottles as artifact
         if: always() && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
         with:
           name: bottles_${{ matrix.os }}
           path: '*.bottle.*'
@@ -420,7 +420,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Check for bottle published label
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
         env:
           HAS_FORMULAE: ${{ needs.setup.outputs.has-formulae }}
         with:
@@ -466,7 +466,7 @@ jobs:
     permissions: {}
     steps:
       - name: Label PR with pr-pull
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
         with:
           github-token: ${{ secrets.GH_BOT_TOKEN }}
           script: |
