@@ -1,19 +1,12 @@
 ---
 name: Update Bug Report
-permissions:
-  contents: read
+permissions: {}
 
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
   pull_request:
-    branches:
-      - master
-    types:
-      - opened
-      - reopened
-      - synchronize
   push:
     branches:
       - master
@@ -21,6 +14,8 @@ on:
 jobs:
   update-formulas:
     name: Update Formula List
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -1,7 +1,6 @@
 ---
 name: Issue labeler
-permissions:
-  contents: read
+permissions: {}
 
 on:
   issues:
