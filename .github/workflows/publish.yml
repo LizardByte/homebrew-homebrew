@@ -1,5 +1,6 @@
 ---
 name: brew pr-pull
+permissions: {}
 
 on:
   pull_request_target:
@@ -60,7 +61,7 @@ jobs:
       - name: Set up git
         uses: Homebrew/actions/git-user-config@main
         with:
-          username: ${{ secrets.GH_BOT_NAME }}
+          username: ${{ vars.GH_BOT_NAME }}
 
       - name: Get PR data
         id: pr-data
@@ -103,7 +104,7 @@ jobs:
         run: |
           brew pr-pull \
             --branch-okay \
-            --committer="${{ secrets.GH_BOT_NAME }} <${{ secrets.GH_BOT_EMAIL }}>" \
+            --committer="${{ vars.GH_BOT_NAME }} <${{ secrets.GH_BOT_EMAIL }}>" \
             --debug \
             --no-cherry-pick \
             --tap="${GITHUB_REPOSITORY}" \
@@ -118,7 +119,7 @@ jobs:
           branch: ${{ steps.pr-data.outputs.branch }}
           remote_branch: ${{ steps.pr-data.outputs.remote_branch }}
         env:
-          GIT_COMMITTER_NAME: ${{ secrets.GH_BOT_NAME }}
+          GIT_COMMITTER_NAME: ${{ vars.GH_BOT_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.GH_BOT_EMAIL }}
 
       - name: Add bottle-published label

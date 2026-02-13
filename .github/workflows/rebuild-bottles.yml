@@ -16,11 +16,11 @@ on:
 jobs:
   detect-formulas:
     name: Detect Formulas
+    outputs:
+      formulas: ${{ steps.detect.outputs.formulas }}
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    outputs:
-      formulas: ${{ steps.detect.outputs.formulas }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -52,14 +52,14 @@ jobs:
 
   rebuild:
     name: Rebuild ${{ matrix.formula }}
-    needs: detect-formulas
-    runs-on: ubuntu-latest
     env:
       COMMIT_MESSAGE: 'chore: ${{ matrix.formula }}: rebuild bottles'
       MATRIX_FORMULA: ${{ matrix.formula }}
       PR_BRANCH_NAME: bot/update-${{ matrix.formula }}-formula
+    needs: detect-formulas
     permissions:
       contents: read
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -114,7 +114,7 @@ jobs:
         uses: actions-js/push@5a7cbd780d82c0c937b5977586e641b2fd94acc5  # v1.5
         with:
           author_email: ${{ secrets.GH_BOT_EMAIL }}
-          author_name: ${{ secrets.GH_BOT_NAME }}
+          author_name: ${{ vars.GH_BOT_NAME }}
           branch: ${{ env.PR_BRANCH_NAME }}
           github_token: ${{ secrets.GH_BOT_TOKEN }}
           message: ${{ env.COMMIT_MESSAGE }}
