@@ -27,3 +27,4 @@ class CudaAT130 < Formula
     sha256 cellar: :any_skip_relocation, x86_64_linux: "99bdba97c1abdd7f83a90c6f383766c6cd6e9ac22c5da12806164929c96669cf"
   end
 end
+# rebuild: 1769030736
