@@ -59,6 +59,14 @@ module CudaFormula
     # Dependent formulae should use CMAKE_CUDA_TOOLKIT_ROOT_DIR=#{libexec}
     # or set CUDA_HOME=#{libexec} to find libraries and headers
 
+    # Symlink all .so files from Nsight tools
+    # This allows Homebrew's linkage checker to find bundled libraries
+    # The tools will still use their bundled copies via RPATH
+    # So this hack is not truly necessary, other than to get CI to pass
+
+    # Use install_symlink with glob to create proper relative symlinks for bottles
+    lib.install_symlink libexec.glob("nsight-*/**/*.so*")
+
     # Create wrapper scripts for CUDA binaries
     # This ensures they can find cuda_runtime.h, nvcc.profile, and other dependencies
     Dir[libexec/"bin/*"].select { |f| File.file?(f) && File.executable?(f) }.each do |exe|
@@ -96,6 +104,10 @@ module CudaFormula
 
       This formula only installs the CUDA Toolkit (compiler and libraries).
       You still need to install the NVIDIA driver separately for your system.
+
+      Note: Nsight tools (Nsight Systems, Nsight Compute) have their libraries
+      symlinked to #{opt_lib} for Homebrew compatibility, but the tools
+      use their bundled versions via RPATH.
 
       Verify your installation with:
         nvcc --version
