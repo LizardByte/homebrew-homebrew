@@ -32,11 +32,12 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "7ee27664d14ec28c200c06fac05f41db86fccb1c70532a7946aba3d810147048"
-    sha256 arm64_sequoia: "79513dfdde12d6f92eb4ebc1df46ebdae7755add85f287da14ef226232778c2d"
-    sha256 arm64_sonoma:  "13f95997e041b77933ed3af65f51f43779a9c19242dffb471bafb20bffe4d26e"
-    sha256 arm64_linux:   "3c134efa5591072f1de86a3c30d53ae2829d63349cc3c84a64e84877f09ee1e3"
-    sha256 x86_64_linux:  "b4ce8763cee54510d1e57d38fc89df10638f8aa781aa34ba5a1b9859d24707ee"
+    rebuild 1
+    sha256 arm64_tahoe:   "4590f1c86a3012e49c778e05e3c7535c4fa83ca47809f3319d21ee86110b14be"
+    sha256 arm64_sequoia: "2296481f41bc4eb9d8f4aae79a6512a230c6cb136533e27164da68a11ac3af35"
+    sha256 arm64_sonoma:  "b470323cde5d251ba70b6852311c37f117528613eb54f0704c18583b074d6518"
+    sha256 arm64_linux:   "ae0e54a26c10d030e32ac66261e78fcf08fc3289050dbcedd7f8927a82c6ffdf"
+    sha256 x86_64_linux:  "9aaa6ca89f7fe9976f93145f96cdea25f077c7c185399db0200ca65f023d233b"
   end
 
   option "with-cuda", "Enable CUDA support (Linux only)"
