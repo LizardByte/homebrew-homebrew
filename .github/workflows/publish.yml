@@ -20,7 +20,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Comment on PR
-        uses: mshick/add-pr-comment@3b5edaaa32fd0272ba44e0eb2d9070b55110e0b9  # v3.1.0.8.3.1.0
+        uses: mshick/add-pr-comment@ffd016c7e151d97d69d21a843022fd4cd5b96fe5  # v3.9.0.8.3.9.0
         with:
           repo-token: ${{ secrets.GH_BOT_TOKEN }}
           message: >
@@ -127,7 +127,7 @@ jobs:
             });
 
       - name: Comment on PR
-        uses: mshick/add-pr-comment@3b5edaaa32fd0272ba44e0eb2d9070b55110e0b9  # v3.1.0.8.3.1.0
+        uses: mshick/add-pr-comment@ffd016c7e151d97d69d21a843022fd4cd5b96fe5  # v3.9.0.8.3.9.0
         with:
           repo-token: ${{ secrets.GH_BOT_TOKEN }}
           message: Bottles have been added to this PR.
