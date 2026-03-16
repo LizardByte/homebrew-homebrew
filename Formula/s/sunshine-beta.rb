@@ -1,6 +1,8 @@
 require "language/node"
 
 class SunshineBeta < Formula
+  include Language::Python::Virtualenv
+
   CUDA_VERSION = "13.1".freeze
   CUDA_FORMULA = "cuda@#{CUDA_VERSION}".freeze
   GCC_VERSION = "14".freeze
@@ -10,7 +12,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.314.174349"
+    tag: "v2026.316.30106"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -32,12 +34,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 1
-    sha256 arm64_tahoe:   "c3355701397e4b9bf7b8a15c2988ca07f7faa58795994f53a00b26dfc6ac3285"
-    sha256 arm64_sequoia: "da4c81f1a69f7ca8dc3eef5a6900d695a7b2ac2192fbf997e037a0b178e54a7e"
-    sha256 arm64_sonoma:  "388ea7bd42a45f0f5aea483d5926a5fc1db5045625c0b872d531fea612a70772"
-    sha256 arm64_linux:   "6d784392efbfd9a782140741fc02d7ebd402693cbc229b923e8663e3fbfa2ba5"
-    sha256 x86_64_linux:  "4aa522b2abd5109b628e6f755729f0ebe65b7c6afc1b5501dc4fa4ef51830d2c"
+    sha256 arm64_tahoe:   "d081b78141cb1ab801ee4695c989b85a5658b21f1fe08c91037d664d7ccd6baa"
+    sha256 arm64_sequoia: "f3be6d12ebe2c69a813bc0545b0047b24e1996d395b9cfac4c645300a85bc996"
+    sha256 arm64_sonoma:  "d5b2d7424a41de88fe31c8acc97343093f14ef83f920cdccb47998f489622ebe"
+    sha256 arm64_linux:   "f0c3ebf4447fe69f0b04c040b3c744ace9fc07158e82fe2d9be3a72ca006a2a0"
+    sha256 x86_64_linux:  "900c168d0eab5245cba68a0e6a2445cf1a1660186f23926bfeca7a0c5147e666"
   end
 
   option "with-cuda", "Enable CUDA support (Linux only)"
@@ -65,6 +66,7 @@ class SunshineBeta < Formula
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
     depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => :build if build.with? "cuda"
+    depends_on "python3" => :build
     depends_on "at-spi2-core"
     depends_on "avahi"
     depends_on "ayatana-ido"
@@ -99,9 +101,29 @@ class SunshineBeta < Formula
     depends_on "pulseaudio"
     depends_on "systemd"
     depends_on "wayland"
+
+    # Jinja2 is required at build time by the glad OpenGL/EGL loader generator (Linux only).
+    # Declared as resources per https://docs.brew.sh/Formula-Cookbook#python-dependencies
+    resource "markupsafe" do
+      url "https://files.pythonhosted.org/packages/7e/99/7690b6d4034fffd95959cbe0c02de8deb3098cc577c67bb6a24fe5d7caa7/markupsafe-3.0.3.tar.gz"
+      sha256 "722695808f4b6457b320fdc131280796bdceb04ab50fe1795cd540799ebe1698"
+    end
+
+    resource "jinja2" do
+      url "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz"
+      sha256 "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
+    end
+
+    # setuptools provides pkg_resources which glad's plugin.py imports at build time.
+    # setuptools >= 81 removed pkg_resources; this is the last release that still ships it.
+    resource "setuptools" do
+      url "https://files.pythonhosted.org/packages/76/95/faf61eb8363f26aa7e1d762267a8d602a1b26d4f3a1e758e92cb3cb8b054/setuptools-80.10.2.tar.gz"
+      sha256 "8b0e9d10c784bf7d262c4e5ec5d4ec94127ce206e8738f29a437945fbc219b70"
+    end
   end
 
   conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
+
   fails_with :clang do
     build 1400
     cause "Requires C++23 support"
@@ -112,12 +134,28 @@ class SunshineBeta < Formula
     cause "Requires C++23 support"
   end
 
+  fails_with :gcc do
+    version "13"
+    cause "Array out of bounds error when compiling glad sources"
+  end
+
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.314.174349"
-    ENV["COMMIT"] = "0bbaa2db7c2ccececa696e11fb8c83e5f8a7f97d"
+    ENV["BUILD_VERSION"] = "2026.316.30106"
+    ENV["COMMIT"] = "1bd1b00493dd07032b8c07717faef43590f407fb"
 
     setup_linux_gcc_environment if OS.linux?
+
+    return unless OS.linux?
+
+    # Install jinja2 (required by the glad OpenGL/EGL loader generator) into a
+    # temporary virtualenv. We pass its Python path to cmake via Python_EXECUTABLE
+    # so glad uses the venv Python that has jinja2, and set GLAD_SKIP_PIP_INSTALL=ON
+    # to prevent cmake from trying to pip-install again.
+    # Follows https://docs.brew.sh/Formula-Cookbook#python-dependencies
+    venv = virtualenv_create(buildpath/"venv", "python3")
+    venv.pip_install resources
+    @glad_python = (buildpath/"venv/bin/python3").to_s
   end
 
   def setup_linux_gcc_environment
@@ -128,10 +166,11 @@ class SunshineBeta < Formula
   end
 
   def base_cmake_args
-    %W[
+    args = %W[
       -DBUILD_WERROR=ON
       -DCMAKE_CXX_STANDARD=23
       -DCMAKE_INSTALL_PREFIX=#{prefix}
+      -DGLAD_SKIP_PIP_INSTALL=ON
       -DHOMEBREW_ALLOW_FETCHCONTENT=ON
       -DOPENSSL_ROOT_DIR=#{Formula["openssl"].opt_prefix}
       -DSUNSHINE_ASSETS_DIR=sunshine/assets
@@ -140,6 +179,9 @@ class SunshineBeta < Formula
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+    # Point cmake at the venv Python that has jinja2 installed (set up in setup_build_environment)
+    args << "-DPython_EXECUTABLE=#{@glad_python}" if @glad_python
+    args
   end
 
   def add_test_args(args)
@@ -309,4 +351,3 @@ class SunshineBeta < Formula
     end
   end
 end
-# rebuild: 1773549441
