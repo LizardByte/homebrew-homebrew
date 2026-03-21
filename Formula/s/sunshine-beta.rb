@@ -12,7 +12,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.319.232111"
+    tag: "v2026.321.25052"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -34,11 +34,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "f24d7526f4bc0589e0c0348b71d26535eefd6e413a25b969db7b4e357a53f29c"
-    sha256 arm64_sequoia: "550f643bbc0b04660bb70be24590bce56d7938c43ba757e5db6780b4501e5c22"
-    sha256 arm64_sonoma:  "00c9abc0cdb2c93b1199a76eb90b9de1152f09c156202b356762f45a9b31a032"
-    sha256 arm64_linux:   "96bf06942fc5b8603f9ff26a2469fe399360722f3765d01b35322bc2fa96e3bb"
-    sha256 x86_64_linux:  "6a33cc2340a5817736bda31d9722b6ca6a1a28de7825c6a2c3fe23c12a900fc5"
+    sha256 arm64_tahoe:   "a7c53993974217a6e8b21a341b7b54762dacda4d891e1cb5ed78143725ee071c"
+    sha256 arm64_sequoia: "88a2cd7577650c1efefef61c8910c275e8654db73a16da15e309924e0f951945"
+    sha256 arm64_sonoma:  "840e0e8a7a685706e301b243b5b233d9dfbd9042fdd45af39d92f0e6a2fbbd42"
+    sha256 arm64_linux:   "45cbde55edc939360ab3fb38c1c1cdcf5378cde93c4a700e711682b5591f1fb1"
+    sha256 x86_64_linux:  "a2ea2f59ce9cc1897b44c718223a64c8acb3b3865d0f6ad17c479b41f12050d1"
   end
 
   option "with-cuda", "Enable CUDA support (Linux only)"
@@ -141,8 +141,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.319.232111"
-    ENV["COMMIT"] = "4bd461cf8247285d0df00e19e2bc01129cf9c5af"
+    ENV["BUILD_VERSION"] = "2026.321.25052"
+    ENV["COMMIT"] = "0d3be0bb1ec2fc3d0bf3774dee834e98353e7e03"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -299,9 +299,6 @@ class SunshineBeta < Formula
 
     if OS.mac?
       opoo <<~EOS
-        Sunshine can only access microphones on macOS due to system limitations.
-        To stream system audio use "Soundflower" or "BlackHole".
-
         Gamepads are not currently supported on macOS.
       EOS
     end
