@@ -26,12 +26,12 @@ class Sunshine < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 13
-    sha256 arm64_tahoe:   "7a6491b129577a8f62efa36285719a2bdb246984809afaa068239ce8f072dede"
-    sha256 arm64_sequoia: "da45b5696130c0f35ef39f533b4883733ce969257a54366e72fbc4027e33a774"
-    sha256 arm64_sonoma:  "cb3ac734984f0ac5e0f4d38e51dcd9d4fd87b1ce4070b914a305e4b4db62d9dc"
-    sha256 arm64_linux:   "5f3b16c3188f6ad6c9d7d2e3da71aa4e45b365b258edf2ee2ed97adee608c87b"
-    sha256 x86_64_linux:  "dc02cbc560ac114c8831ba93b768e7e2417d5c3959e8f271e7a7dd1dfb8fe31d"
+    rebuild 14
+    sha256 arm64_tahoe:   "521173c7ab6c9253c9de5bbcbd0422e6ceba4b8e5cb95f0ac36eaf5b12665f35"
+    sha256 arm64_sequoia: "ef8c5e7601d751fa047b4db86838271e9688dc21f2283eeef1e25d08d3d410d6"
+    sha256 arm64_sonoma:  "9816089324c41d0ee21defa34a763b29cca18a1c1e0a04244c987cb91441f912"
+    sha256 arm64_linux:   "ce3f0b9a3005d13e1f8ddab0494ae140abb6a4f212370db1d1972d11ed059f7c"
+    sha256 x86_64_linux:  "13241a87c1c999d9676e6b2c81de311cf5869f4d4d67634cf11fc18106ef0f5f"
   end
 
   option "with-docs", "Enable docs"
@@ -225,4 +225,4 @@ class Sunshine < Formula
     end
   end
 end
-# rebuild: 1773549441
+# rebuild: 1774153531
