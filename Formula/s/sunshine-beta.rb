@@ -12,7 +12,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.508.45922"
+    tag: "v2026.513.230134"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -34,12 +34,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 1
-    sha256 arm64_tahoe:   "d3587cc4611b9251ae4c8018dddbc507e88ef3e64767b518977cf2231e9e3765"
-    sha256 arm64_sequoia: "081eb827c3c709b159fd5eaef35e2c925210f2d18d4911c3a5748b997f119d31"
-    sha256 arm64_sonoma:  "462c8409eeebe41d2fa706631ad34303e7aca6d764d16ffa47a29a3ef1f68223"
-    sha256 arm64_linux:   "ac44a816d1863e1740289d2e0a743a6f6b34d12a4a6f6c2687ef5461d1551d66"
-    sha256 x86_64_linux:  "f24972688cef36132094e970fa433025a33cb792d8b00a3796911d25c7738671"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_linux:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-cuda", "Enable CUDA support (Linux only)"
@@ -144,8 +143,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.508.45922"
-    ENV["COMMIT"] = "810783dc7c7200fcb613c7d0919f6c8a7bbbebb9"
+    ENV["BUILD_VERSION"] = "2026.513.230134"
+    ENV["COMMIT"] = "f9d1aca72e9b5633e93b340d14fc870bc8f38a2e"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -171,7 +170,6 @@ class SunshineBeta < Formula
   def base_cmake_args
     args = %W[
       -DBUILD_WERROR=ON
-      -DCMAKE_CXX_STANDARD=23
       -DCMAKE_INSTALL_PREFIX=#{prefix}
       -DGLAD_SKIP_PIP_INSTALL=ON
       -DHOMEBREW_ALLOW_FETCHCONTENT=ON
@@ -351,4 +349,3 @@ class SunshineBeta < Formula
     end
   end
 end
-# rebuild: 1778391746
