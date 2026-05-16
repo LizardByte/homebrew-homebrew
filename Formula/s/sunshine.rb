@@ -13,7 +13,6 @@ class Sunshine < Formula
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
     tag: "v2026.516.143833"
-  version "2026.516.143833"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
