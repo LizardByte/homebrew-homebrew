@@ -1,6 +1,10 @@
 require "language/node"
 
 class Sunshine < Formula
+  include Language::Python::Virtualenv
+
+  CUDA_VERSION = "13.1".freeze
+  CUDA_FORMULA = "cuda@#{CUDA_VERSION}".freeze
   GCC_VERSION = "14".freeze
   GCC_FORMULA = "gcc@#{GCC_VERSION}".freeze
   IS_UPSTREAM_REPO = ENV.fetch("GITHUB_REPOSITORY", "") == "LizardByte/Sunshine"
@@ -8,7 +12,7 @@ class Sunshine < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2025.924.154138"
+    tag: "v2026.516.143833"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -26,31 +30,39 @@ class Sunshine < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 21
-    sha256 arm64_tahoe:   "9a76173ffb88e71c2b8dd90f23431441a88a59873ce26a49e8d5197c0a60c274"
-    sha256 arm64_sequoia: "f38287d7f4d6910abc15c2b7a520c02b3c3ba37cabce4c7330f7a0c183068b42"
-    sha256 arm64_sonoma:  "317aaec56214755a97d776364580db5d8c3a48b869a510bb6f8eb458f9f569d2"
-    sha256 arm64_linux:   "0f71b4fb9b178b5ce981a65603b2d7b66fff01115a47158ba9fb184167e4ad32"
-    sha256 x86_64_linux:  "8ec073da1c0d9106129ffb1619b4cdb550def0f46bac28bb70fd4ef14f1533fa"
+    sha256 arm64_tahoe:   "1c230eeb81b18a20b9919dff17bc099c881990a2cd9ea337c8b8642568ac7946"
+    sha256 arm64_sequoia: "717964cb7303c06c7821e804913fd4c8ba3c57517c9c7ba6d427b6b36928892d"
+    sha256 arm64_sonoma:  "31b58a5292e06750a4701be65817936683faeee8427b14d20db8e270c15aab3a"
+    sha256 arm64_linux:   "dc0c22cfe05014e68d2bf9fbe87df53d74e3175b68a49ad71eee6452ba3bc3f3"
+    sha256 x86_64_linux:  "5811eb2f10678faf757db7262e0e04f276b333368352983a2e3f8d0fdf3225d4"
   end
 
-  option "with-docs", "Enable docs"
+  option "with-cuda", "Enable CUDA support (Linux only)"
+  option "with-docs", "Enable docs build"
   option "with-static-boost", "Enable static link of Boost libraries"
   option "without-static-boost", "Disable static link of Boost libraries" # default option
 
   depends_on "cmake" => :build
-  depends_on "doxygen" => :build
-  depends_on "graphviz" => :build
+  depends_on "doxygen" => :build if build.with? "docs"
+  depends_on "graphviz" => :build if build.with? "docs"
   depends_on "node" => :build
   depends_on "pkgconf" => :build
+  depends_on "gcovr" => :test
+  depends_on "boost"
   depends_on "curl"
   depends_on "icu4c@78"
   depends_on "miniupnpc"
   depends_on "openssl@3"
   depends_on "opus"
 
+  on_macos do
+    depends_on "llvm" => [:build, :test]
+  end
+
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
+    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => :build if build.with? "cuda"
+    depends_on "python3" => :build
     depends_on "at-spi2-core"
     depends_on "avahi"
     depends_on "ayatana-ido"
@@ -81,9 +93,31 @@ class Sunshine < Formula
     depends_on "mesa"
     depends_on "numactl"
     depends_on "pango"
+    depends_on "pipewire"
     depends_on "pulseaudio"
+    depends_on "shaderc"
     depends_on "systemd"
+    depends_on "vulkan-loader"
     depends_on "wayland"
+
+    # Jinja2 is required at build time by the glad OpenGL/EGL loader generator (Linux only).
+    # Declared as resources per https://docs.brew.sh/Formula-Cookbook#python-dependencies
+    resource "markupsafe" do
+      url "https://files.pythonhosted.org/packages/7e/99/7690b6d4034fffd95959cbe0c02de8deb3098cc577c67bb6a24fe5d7caa7/markupsafe-3.0.3.tar.gz"
+      sha256 "722695808f4b6457b320fdc131280796bdceb04ab50fe1795cd540799ebe1698"
+    end
+
+    resource "jinja2" do
+      url "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz"
+      sha256 "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
+    end
+
+    # setuptools provides pkg_resources which glad's plugin.py imports at build time.
+    # setuptools >= 81 removed pkg_resources; this is the last release that still ships it.
+    resource "setuptools" do
+      url "https://files.pythonhosted.org/packages/76/95/faf61eb8363f26aa7e1d762267a8d602a1b26d4f3a1e758e92cb3cb8b054/setuptools-80.10.2.tar.gz"
+      sha256 "8b0e9d10c784bf7d262c4e5ec5d4ec94127ce206e8738f29a437945fbc219b70"
+    end
   end
 
   conflicts_with "sunshine-beta", because: "sunshine and sunshine-beta cannot be installed at the same time"
@@ -98,24 +132,42 @@ class Sunshine < Formula
     cause "Requires C++23 support"
   end
 
-  def install
+  fails_with :gcc do
+    version "13"
+    cause "Array out of bounds error when compiling glad sources"
+  end
+
+  def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2025.924.154138"
-    ENV["COMMIT"] = "86188d47a7463b0f73b35de18a628353adeaa20e"
+    ENV["BUILD_VERSION"] = "2026.516.143833"
+    ENV["COMMIT"] = "14ffa6fdaa53f7b51512be2b3d24f3939695403c"
 
-    if OS.linux?
-      gcc_path = Formula[GCC_FORMULA]
-      ENV["CC"] = "#{gcc_path.opt_bin}/gcc-#{GCC_VERSION}"
-      ENV["CXX"] = "#{gcc_path.opt_bin}/g++-#{GCC_VERSION}"
+    setup_linux_gcc_environment if OS.linux?
 
-      # Add static linking flags for libgcc and libstdc++
-      ENV.append "LDFLAGS", "-static-libgcc -static-libstdc++"
-    end
+    return unless OS.linux?
 
+    # Install jinja2 (required by the glad OpenGL/EGL loader generator) into a
+    # temporary virtualenv. We pass its Python path to cmake via Python_EXECUTABLE
+    # so glad uses the venv Python that has jinja2, and set GLAD_SKIP_PIP_INSTALL=ON
+    # to prevent cmake from trying to pip-install again.
+    # Follows https://docs.brew.sh/Formula-Cookbook#python-dependencies
+    venv = virtualenv_create(buildpath/"venv", "python3")
+    venv.pip_install resources
+    @glad_python = (buildpath/"venv/bin/python3").to_s
+  end
+
+  def setup_linux_gcc_environment
+    # Use GCC because gcov from llvm cannot handle our paths
+    gcc_path = Formula[GCC_FORMULA]
+    ENV["CC"] = "#{gcc_path.opt_bin}/gcc-#{GCC_VERSION}"
+    ENV["CXX"] = "#{gcc_path.opt_bin}/g++-#{GCC_VERSION}"
+  end
+
+  def base_cmake_args
     args = %W[
       -DBUILD_WERROR=ON
-      -DCMAKE_CXX_STANDARD=23
       -DCMAKE_INSTALL_PREFIX=#{prefix}
+      -DGLAD_SKIP_PIP_INSTALL=ON
       -DHOMEBREW_ALLOW_FETCHCONTENT=ON
       -DOPENSSL_ROOT_DIR=#{Formula["openssl"].opt_prefix}
       -DSUNSHINE_ASSETS_DIR=sunshine/assets
@@ -124,7 +176,12 @@ class Sunshine < Formula
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+    # Point cmake at the venv Python that has jinja2 installed (set up in setup_build_environment)
+    args << "-DPython_EXECUTABLE=#{@glad_python}" if @glad_python
+    args
+  end
 
+  def add_test_args(args)
     if IS_UPSTREAM_REPO
       args << "-DBUILD_TESTS=ON"
       ohai "Building tests: enabled"
@@ -132,7 +189,9 @@ class Sunshine < Formula
       args << "-DBUILD_TESTS=OFF"
       ohai "Building tests: disabled"
     end
+  end
 
+  def add_docs_args(args)
     if build.with? "docs"
       ohai "Building docs: enabled"
       args << "-DBUILD_DOCS=ON"
@@ -140,47 +199,87 @@ class Sunshine < Formula
       ohai "Building docs: disabled"
       args << "-DBUILD_DOCS=OFF"
     end
+  end
 
+  def add_boost_args(args)
     if build.without? "static-boost"
       args << "-DBOOST_USE_STATIC=OFF"
       ohai "Disabled statically linking Boost libraries"
     else
-      args << "-DBOOST_USE_STATIC=ON"
-      ohai "Enabled statically linking Boost libraries"
-
-      unless Formula["icu4c"].any_version_installed?
-        odie <<~EOS
-          icu4c must be installed to link against static Boost libraries,
-          either install icu4c or use brew install sunshine --with-static-boost instead
-        EOS
-      end
-      ENV.append "CXXFLAGS", "-I#{Formula["icu4c"].opt_include}"
-      icu4c_lib_path = Formula["icu4c"].opt_lib.to_s
-      ENV.append "LDFLAGS", "-L#{icu4c_lib_path}"
-      ENV["LIBRARY_PATH"] = icu4c_lib_path
-      ohai "Linking against ICU libraries at: #{icu4c_lib_path}"
+      configure_static_boost(args)
     end
+  end
 
-    if OS.linux?
-      args << "-DCUDA_FAIL_ON_MISSING=OFF"
-      # Pass static linking flags to CMake for libgcc and libstdc++
-      args << "-DCMAKE_EXE_LINKER_FLAGS=-static-libgcc -static-libstdc++"
-      args << "-DCMAKE_SHARED_LINKER_FLAGS=-static-libgcc -static-libstdc++"
+  def configure_static_boost(args)
+    args << "-DBOOST_USE_STATIC=ON"
+    ohai "Enabled statically linking Boost libraries"
+
+    unless Formula["icu4c"].any_version_installed?
+      odie <<~EOS
+        icu4c must be installed to link against static Boost libraries,
+        either install icu4c or use brew install sunshine --with-static-boost instead
+      EOS
     end
+    ENV.append "CXXFLAGS", "-I#{Formula["icu4c"].opt_include}"
+    icu4c_lib_path = Formula["icu4c"].opt_lib.to_s
+    ENV.append "LDFLAGS", "-L#{icu4c_lib_path}"
+    ENV["LIBRARY_PATH"] = icu4c_lib_path
+    ohai "Linking against ICU libraries at: #{icu4c_lib_path}"
+  end
 
+  def add_cuda_args(args)
+    return unless OS.linux?
+
+    if build.with?(CUDA_FORMULA)
+      configure_cuda(args)
+    else
+      args << "-DSUNSHINE_ENABLE_CUDA=OFF"
+      ohai "CUDA disabled"
+    end
+  end
+
+  def configure_cuda(args)
+    cuda_path = Formula["lizardbyte/homebrew/#{CUDA_FORMULA}"]
+    nvcc_path = "#{cuda_path.opt_bin}/nvcc"
+    gcc_path = Formula[GCC_FORMULA]
+
+    args << "-DSUNSHINE_ENABLE_CUDA=ON"
+    args << "-DCMAKE_CUDA_COMPILER:PATH=#{nvcc_path}"
+    args << "-DCMAKE_CUDA_HOST_COMPILER=#{gcc_path.opt_bin}/gcc-#{GCC_VERSION}"
+    ohai "CUDA enabled with nvcc at: #{nvcc_path}"
+  end
+
+  def build_cmake_args
+    args = base_cmake_args
+    add_test_args(args)
+    add_docs_args(args)
+    add_boost_args(args)
+    add_cuda_args(args)
+    args
+  end
+
+  def build_and_install_project
     system "cmake", "-S", ".", "-B", "build", "-G", "Unix Makefiles",
             *std_cmake_args,
-            *args
+            *build_cmake_args
 
     system "make", "-C", "build"
     system "make", "-C", "build", "install"
+  end
 
+  def install_platform_specific_files
     bin.install "build/tests/test_sunshine" if IS_UPSTREAM_REPO
 
     # codesign the binary on intel macs
     system "codesign", "-s", "-", "--force", "--deep", bin/"sunshine" if OS.mac? && Hardware::CPU.intel?
 
     bin.install "src_assets/linux/misc/postinst" if OS.linux?
+  end
+
+  def install
+    setup_build_environment
+    build_and_install_project
+    install_platform_specific_files
   end
 
   service do
@@ -197,9 +296,6 @@ class Sunshine < Formula
 
     if OS.mac?
       opoo <<~EOS
-        Sunshine can only access microphones on macOS due to system limitations.
-        To stream system audio use "Soundflower" or "BlackHole".
-
         Gamepads are not currently supported on macOS.
       EOS
     end
@@ -218,11 +314,34 @@ class Sunshine < Formula
     # test that the binary runs at all
     system bin/"sunshine", "--version"
 
-    if IS_UPSTREAM_REPO
+    if IS_UPSTREAM_REPO && ENV.fetch("HOMEBREW_BOTTLE_BUILD", "false") != "true"
       # run the test suite
-      system bin/"test_sunshine", "--gtest_color=yes", "--gtest_output=xml:test_results.xml"
-      assert_path_exists testpath/"test_results.xml"
+      system bin/"test_sunshine", "--gtest_color=yes", "--gtest_output=xml:tests/test_results.xml"
+      assert_path_exists File.join(testpath, "tests", "test_results.xml")
+
+      # create gcovr report
+      buildpath = ENV.fetch("HOMEBREW_BUILDPATH", "")
+      unless buildpath.empty?
+        # Change to the source directory for gcovr to work properly
+        cd "#{buildpath}/build" do
+          # Use GCC version to match what was used during compilation
+          if OS.linux?
+            gcc_path = Formula[GCC_FORMULA]
+            gcov_executable = "#{gcc_path.opt_bin}/gcov-#{GCC_VERSION}"
+
+            system "gcovr", ".",
+              "-r", "../src",
+              "--gcov-executable", gcov_executable,
+              "--exclude-noncode-lines",
+              "--exclude-throw-branches",
+              "--exclude-unreachable-branches",
+              "--xml-pretty",
+              "-o=#{testpath}/coverage.xml"
+
+            assert_path_exists File.join(testpath, "coverage.xml")
+          end
+        end
+      end
     end
   end
 end
-# rebuild: 1778391746
