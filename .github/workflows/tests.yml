@@ -41,6 +41,17 @@ jobs:
       - name: Brew cleanup before
         run: brew test-bot --fail-fast --only-cleanup-before
 
+      # Homebrew's Linux sandbox requires bwrap on PATH before brew test-bot runs brew doctor.
+      # Install it after cleanup-before, which prunes formulae from the prefix.
+      # The sysctls enable the rootless user namespaces that bwrap needs to create the sandbox.
+      - name: Set up Homebrew Linux sandbox
+        if: runner.os == 'Linux'
+        run: |
+          brew install bubblewrap
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+          sudo sysctl -w user.max_user_namespaces=28633
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
       - name: Brew setup
         run: brew test-bot --fail-fast --only-setup
 
@@ -355,6 +366,17 @@ jobs:
 
       - name: Brew cleanup before
         run: brew test-bot --fail-fast --only-cleanup-before
+
+      # Homebrew's Linux sandbox requires bwrap on PATH before brew test-bot runs brew doctor.
+      # Install it after cleanup-before, which prunes formulae from the prefix.
+      # The sysctls enable the rootless user namespaces that bwrap needs to create the sandbox.
+      - name: Set up Homebrew Linux sandbox
+        if: runner.os == 'Linux'
+        run: |
+          brew install bubblewrap
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+          sudo sysctl -w user.max_user_namespaces=28633
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
       - name: Brew setup
         run: brew test-bot --fail-fast --only-setup

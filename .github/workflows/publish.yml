@@ -44,6 +44,16 @@ jobs:
         with:
           stable: true
 
+      # Homebrew's Linux sandbox requires bwrap on PATH before brew pr-pull runs brew doctor.
+      # The sysctls enable the rootless user namespaces that bwrap needs to create the sandbox.
+      - name: Set up Homebrew Linux sandbox
+        if: runner.os == 'Linux'
+        run: |
+          brew install bubblewrap
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+          sudo sysctl -w user.max_user_namespaces=28633
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
       - name: Set up git
         uses: Homebrew/actions/git-user-config@main
         with:
