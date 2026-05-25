@@ -12,7 +12,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.522.22447"
+    tag: "v2026.525.22124"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -34,12 +34,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 1
-    sha256 arm64_tahoe:   "b0ce75fbb29121b605aab471503972c08403bcb16f0af06009b3fbcfef462392"
-    sha256 arm64_sequoia: "25c655c7b1beb2a2c3686f2a876688dbddd96c76a681ce7a36f5704fb0c3b1ae"
-    sha256 arm64_sonoma:  "cebaac81cf895c902803209ae6cfc9f4d55ee1885f053857ef066b45c4edab72"
-    sha256 arm64_linux:   "9f65ccbffce45fc420613be542931b2c8a5baad06a02b4bd5fc272c134c29d37"
-    sha256 x86_64_linux:  "04c0f0e1c8bda6f24f40d5c71127f7599bc52588e0bb32b0011ffaa391234e8c"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_linux:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-cuda", "Enable CUDA support (Linux only)"
@@ -70,17 +69,12 @@ class SunshineBeta < Formula
     depends_on "python3" => :build
     depends_on "at-spi2-core"
     depends_on "avahi"
-    depends_on "ayatana-ido"
     depends_on "cairo"
     depends_on "gdk-pixbuf"
     depends_on "glib"
     depends_on "gnu-which"
-    depends_on "gtk+3"
     depends_on "harfbuzz"
-    depends_on "libayatana-appindicator"
-    depends_on "libayatana-indicator"
     depends_on "libcap"
-    depends_on "libdbusmenu"
     depends_on "libdrm"
     depends_on "libice"
     depends_on "libnotify"
@@ -100,6 +94,8 @@ class SunshineBeta < Formula
     depends_on "pango"
     depends_on "pipewire"
     depends_on "pulseaudio"
+    depends_on "qtbase"
+    depends_on "qtsvg"
     depends_on "shaderc"
     depends_on "systemd"
     depends_on "vulkan-loader"
@@ -144,8 +140,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.522.22447"
-    ENV["COMMIT"] = "ccd09c1021545be14b4e072374bd5fb9d8c42e74"
+    ENV["BUILD_VERSION"] = "2026.525.22124"
+    ENV["COMMIT"] = "dbce229174140ad7e301b5ec9c20b73eedeff17a"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -350,4 +346,3 @@ class SunshineBeta < Formula
     end
   end
 end
-# rebuild: 1779602876
