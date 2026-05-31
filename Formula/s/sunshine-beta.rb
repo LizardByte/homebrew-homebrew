@@ -346,3 +346,4 @@ class SunshineBeta < Formula
     end
   end
 end
+# rebuild: 1780208760
