@@ -58,19 +58,6 @@ jobs:
       - name: Brew setup
         run: brew test-bot --fail-fast --only-setup
 
-      - name: Update actionlint config
-        run: |
-          # find file
-          actionlint_config_file="$(brew --repo)/.github/actionlint.yaml"
-          echo "Found actionlint config: ${actionlint_config_file}"
-          echo "=== ORIGINAL CONTENTS ==="
-          cat "${actionlint_config_file}"
-
-          # amend file
-          echo "  - GH_BOT_NAME" >> "${actionlint_config_file}"
-          echo "=== MODIFIED CONTENTS ==="
-          cat "${actionlint_config_file}"
-
       - name: Check syntax
         run: brew test-bot --fail-fast --only-tap-syntax
 

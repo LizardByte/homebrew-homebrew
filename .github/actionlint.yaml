@@ -1,0 +1,5 @@
+---
+# Keep `brew style` using this tap's actionlint settings instead of
+# Homebrew/brew's repository-specific config.
+config-variables:
+  - GH_BOT_NAME
