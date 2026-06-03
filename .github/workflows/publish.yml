@@ -54,6 +54,9 @@ jobs:
           sudo sysctl -w user.max_user_namespaces=28633
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
+      - name: Trust tap
+        run: brew trust lizardbyte/homebrew
+
       - name: Set up git
         uses: Homebrew/actions/git-user-config@main
         with:
