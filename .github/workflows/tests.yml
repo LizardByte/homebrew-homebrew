@@ -28,7 +28,7 @@ jobs:
         id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@main
         with:
-          stable: true
+          stable: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Homebrew Bundler RubyGems
@@ -51,9 +51,6 @@ jobs:
           sudo sysctl -w kernel.unprivileged_userns_clone=1
           sudo sysctl -w user.max_user_namespaces=28633
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
-
-      - name: Trust tap
-        run: brew trust lizardbyte/homebrew
 
       - name: Brew setup
         run: brew test-bot --fail-fast --only-setup
@@ -328,7 +325,7 @@ jobs:
         id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@main
         with:
-          stable: true
+          stable: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Homebrew Bundler RubyGems
@@ -367,9 +364,6 @@ jobs:
           sudo sysctl -w kernel.unprivileged_userns_clone=1
           sudo sysctl -w user.max_user_namespaces=28633
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
-
-      - name: Trust tap
-        run: brew trust lizardbyte/homebrew
 
       - name: Brew setup
         run: brew test-bot --fail-fast --only-setup
