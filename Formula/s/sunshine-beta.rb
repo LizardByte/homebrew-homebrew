@@ -12,7 +12,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.528.35537"
+    tag: "v2026.531.163415"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -34,11 +34,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "78ec9b84f38f17f85b826010dbe47aa7eed5d74435dbd1d40b16cc42e9ae9b5e"
-    sha256 arm64_sequoia: "a0307cdc1e2ad3e2d70bb8b4150169d6fa38ba565d97b6da0e54f34c21fc2548"
-    sha256 arm64_sonoma:  "916978e9d034f8925cefdafe353a447d0bfec21994a00b4465d688306ac46c4b"
-    sha256 arm64_linux:   "c8a793785536afa4139d2dc336b790224e377a613713525e91b38501f1bd58de"
-    sha256 x86_64_linux:  "e2053cffd79e6628d8c033657c10c4b02759b8112f8ea2c4f8a25cf0ce4d822e"
+    sha256 arm64_tahoe:   "3f273eb5ec5ebba3db54e8edc6ef33470d2526d82534d42747c0cdae4baeb0fe"
+    sha256 arm64_sequoia: "01d5f0628e74eff65b941ab30ea8012251f493eae7c00429592669853a5f8fc9"
+    sha256 arm64_sonoma:  "c179393722f29b1ab572740a13b2cffe2077c39a06ed1b2c2be14f2e994bba38"
+    sha256 arm64_linux:   "d85b393c628c5e0a1b9dd6632682cc7b7ba999dc8f52ab9528105e6037ea91ba"
+    sha256 x86_64_linux:  "77e5914bba4babc52d83a170e7945a4893e2c26ae700ece54cc9a8a3c935ccf9"
   end
 
   option "with-cuda", "Enable CUDA support (Linux only)"
@@ -140,8 +140,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.528.35537"
-    ENV["COMMIT"] = "22d9aa3b2e5fe0cee654e830b5715901b37cf0bd"
+    ENV["BUILD_VERSION"] = "2026.531.163415"
+    ENV["COMMIT"] = "fe500199604f0db5bde25bf640779c54b08248b6"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -150,7 +150,7 @@ class SunshineBeta < Formula
     # Install jinja2 (required by the glad OpenGL/EGL loader generator) into a
     # temporary virtualenv. We pass its Python path to cmake via Python_EXECUTABLE
     # so glad uses the venv Python that has jinja2, and set GLAD_SKIP_PIP_INSTALL=ON
-    # to prevent cmake from trying to pip-install again.
+    # to prevent cmake from trying to install Python dependencies again.
     # Follows https://docs.brew.sh/Formula-Cookbook#python-dependencies
     venv = virtualenv_create(buildpath/"venv", "python3")
     venv.pip_install resources
@@ -177,6 +177,7 @@ class SunshineBeta < Formula
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+    args << "-DSUNSHINE_EXECUTABLE_PATH=#{opt_bin}/sunshine" if OS.linux?
     # Point cmake at the venv Python that has jinja2 installed (set up in setup_build_environment)
     args << "-DPython_EXECUTABLE=#{@glad_python}" if @glad_python
     args
@@ -284,7 +285,8 @@ class SunshineBeta < Formula
   end
 
   service do
-    run [opt_bin/"sunshine", "~/.config/sunshine/sunshine.conf"]
+    run [opt_bin/"sunshine", "~/.config/sunshine/sunshine.conf"] if OS.mac?
+    name linux: "app-dev.lizardbyte.app.Sunshine" if OS.linux?
   end
 
   def post_install
