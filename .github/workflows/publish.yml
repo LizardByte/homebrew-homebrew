@@ -42,7 +42,7 @@ jobs:
         id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@main
         with:
-          stable: true
+          stable: false
 
       # Homebrew's Linux sandbox requires bwrap on PATH before brew pr-pull runs brew doctor.
       # The sysctls enable the rootless user namespaces that bwrap needs to create the sandbox.
@@ -53,9 +53,6 @@ jobs:
           sudo sysctl -w kernel.unprivileged_userns_clone=1
           sudo sysctl -w user.max_user_namespaces=28633
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
-
-      - name: Trust tap
-        run: brew trust lizardbyte/homebrew
 
       - name: Set up git
         uses: Homebrew/actions/git-user-config@main
