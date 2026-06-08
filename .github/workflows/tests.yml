@@ -2,6 +2,9 @@
 name: brew test-bot
 permissions: {}
 
+env:
+  UBUNTU_VERSION: "24.04"
+
 on:
   push:
     branches:
@@ -270,8 +273,8 @@ jobs:
           # - macos-26 = macOS 16.x Tahoe (arm64)
           PLATFORMS="["
           if [ "${NEEDS_LINUX}" == "true" ]; then
-            PLATFORMS="${PLATFORMS}\"ubuntu-22.04\","
-            PLATFORMS="${PLATFORMS}\"ubuntu-22.04-arm\","
+            PLATFORMS="${PLATFORMS}\"ubuntu-${UBUNTU_VERSION}\","
+            PLATFORMS="${PLATFORMS}\"ubuntu-${UBUNTU_VERSION}-arm\","
           fi
           if [ "${NEEDS_MACOS}" == "true" ]; then
             # If specific macOS versions were detected, use only those
@@ -291,7 +294,7 @@ jobs:
 
           # If no platforms detected, default to all platforms
           if [ "${PLATFORMS}" == "]" ]; then
-            PLATFORMS='["ubuntu-22.04","macos-14","macos-15","macos-26"]'
+            PLATFORMS="[\"ubuntu-${UBUNTU_VERSION}\",\"macos-14\",\"macos-15\",\"macos-26\"]"
           fi
 
           echo "Platforms to test: ${PLATFORMS}"
@@ -339,7 +342,7 @@ jobs:
       # https://github.com/orgs/Homebrew/discussions/6615
       # https://github.com/ruby/rubygems/issues/7983
       - name: Fix ruby gems directory permissions
-        if: matrix.os == 'ubuntu-22.04-arm'
+        if: matrix.os == format('ubuntu-{0}-arm', env.UBUNTU_VERSION)
         run: |
           # Fix ownership first so current user can write, then remove world-writable
           BUNDLE_DIR="$(brew --prefix)/Homebrew/Library/Homebrew/vendor/bundle/ruby"
