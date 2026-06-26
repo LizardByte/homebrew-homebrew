@@ -9,7 +9,10 @@ on:
 
 jobs:
   pr-pull:
-    if: contains(github.event.pull_request.labels.*.name, 'pr-pull')
+    if: |
+      github.event.label.name == 'pr-pull' &&
+      github.event.pull_request.state == 'open' &&
+      !contains(github.event.pull_request.labels.*.name, 'bottle-published')
     runs-on: ubuntu-24.04
     permissions:
       actions: read
