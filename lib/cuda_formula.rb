@@ -153,7 +153,8 @@ module CudaFormula
 
   def test
     # Test that nvcc is available and can report its version
-    assert_match version.to_s, shell_output("#{bin}/nvcc --version")
+    cuda_release = version.to_s[/^\d+\.\d+/]
+    assert_match "release #{cuda_release}", shell_output("#{bin}/nvcc --version")
 
     # Test compiling a simple CUDA program
     (testpath/"test.cu").write <<~EOS
