@@ -105,10 +105,10 @@ module CudaFormula
     library_roots = [
       libexec/"lib64",
       libexec/"extras/CUPTI/lib64",
-      *Dir[libexec/"targets/*/lib"],
+      *Dir[libexec/"targets/*/lib"].map { |path| Pathname.new(path) },
     ].select(&:directory?)
 
-    Dir[libexec/"**/*"].select { |file| File.file?(file) }.each do |file|
+    Dir[libexec/"**/*"].map { |path| Pathname.new(path) }.select(&:file?).each do |file|
       next unless File.open(file, "rb") { |f| f.read(4) == "\x7FELF".b }
 
       file_dir = file.dirname
