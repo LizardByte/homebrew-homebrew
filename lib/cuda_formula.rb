@@ -72,16 +72,19 @@ module CudaFormula
 
     # Create wrapper scripts for CUDA binaries
     # This ensures they can find cuda_runtime.h, nvcc.profile, and other dependencies
+    wrapper_bin = libexec/"homebrew/bin"
+    wrapper_bin.mkpath
+
     Dir[libexec/"bin/*"].select { |f| File.file?(f) && File.executable?(f) }.each do |exe|
       binary_name = File.basename(exe)
-      (bin/binary_name).write <<~EOS
+      (wrapper_bin/binary_name).write <<~EOS
         #!/bin/bash
         export CUDA_HOME="#{libexec}"
         export PATH="#{libexec}/bin:$PATH"
         export LD_LIBRARY_PATH="#{library_paths.join(":")}:$LD_LIBRARY_PATH"
         exec "#{libexec}/bin/#{binary_name}" "$@"
       EOS
-      chmod 0755, bin/binary_name
+      chmod 0755, wrapper_bin/binary_name
     end
   end
 
@@ -130,18 +133,18 @@ module CudaFormula
         #{opt_libexec}
 
       Wrapper scripts for CUDA binaries are available at:
-        #{opt_bin}/nvcc
+        #{opt_libexec}/homebrew/bin/nvcc
 
       These wrappers automatically set CUDA_HOME for you.
 
       For CMake projects (sunshine-beta example):
         cuda_path = Formula["lizardbyte/homebrew/cuda@13.1"]
-        args << "-DCMAKE_CUDA_COMPILER=\#{cuda_path.opt_bin}/nvcc"
+        args << "-DCMAKE_CUDA_COMPILER=\#{cuda_path.opt_libexec}/homebrew/bin/nvcc"
         args << "-DCMAKE_CUDA_TOOLKIT_ROOT_DIR=\#{cuda_path.opt_libexec}"
 
       For shell/manual configuration:
         export CUDA_HOME=#{opt_libexec}
-        export PATH=#{opt_bin}:$PATH
+        export PATH=#{opt_libexec}/homebrew/bin:$PATH
         export LD_LIBRARY_PATH=#{opt_libexec}/lib64:$LD_LIBRARY_PATH
 
       This formula only installs the CUDA Toolkit (compiler and libraries).
@@ -153,9 +156,11 @@ module CudaFormula
   end
 
   def test
+    cuda_nvcc = libexec/"homebrew/bin/nvcc"
+
     # Test that nvcc is available and can report its version
     cuda_release = version.to_s[/^\d+\.\d+/]
-    assert_match "release #{cuda_release}", shell_output("#{bin}/nvcc --version")
+    assert_match "release #{cuda_release}", shell_output("#{cuda_nvcc} --version")
 
     # Test compiling a simple CUDA program
     (testpath/"test.cu").write <<~EOS
@@ -172,7 +177,7 @@ module CudaFormula
     EOS
 
     # Compile the test program
-    system bin/"nvcc", "test.cu", "-o", "test"
+    system cuda_nvcc, "test.cu", "-o", "test"
     assert_path_exists testpath/"test"
 
     # Test that CMake can find the CUDA toolkit
@@ -190,7 +195,7 @@ module CudaFormula
     # Try to configure the CMake project
     # This will fail if CMake cannot find a working CUDA compiler
     system "cmake", "-S", testpath, "-B", testpath/"build",
-           "-DCMAKE_CUDA_COMPILER=#{bin}/nvcc"
+           "-DCMAKE_CUDA_COMPILER=#{cuda_nvcc}"
 
     # Verify CMake found the CUDA toolkit
     assert_path_exists testpath/"build/CMakeCache.txt"
