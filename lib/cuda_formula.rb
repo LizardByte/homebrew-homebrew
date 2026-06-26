@@ -8,6 +8,7 @@ module CudaFormula
       depends_on "patchelf" => :build
       depends_on "cmake" => :test
       depends_on :linux
+      keg_only :versioned_formula
 
       # Default livecheck - will be overridden by setup_livecheck if CUDA_VERSION is defined
       livecheck do
