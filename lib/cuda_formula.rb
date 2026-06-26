@@ -93,7 +93,8 @@ module CudaFormula
     FileUtils.rm_rf(libexec/"gds")
     FileUtils.rm_rf(libexec/"libnvvp")
 
-    FileUtils.rm_f(Dir[libexec/"bin/{ctadvisor,cuda-gdb*,cuda-uninstaller,ncu,ncu-ui,nsight*,nsys,nsys-ui,nvprof,nvvp}"])
+    FileUtils.rm_f(Dir[libexec/"bin/{ctadvisor,cuda-gdb*,cuda-uninstaller,ncu,ncu-ui,nsight*,nsys,nsys-ui}"])
+    FileUtils.rm_f(Dir[libexec/"bin/{nvprof,nvvp}"])
     FileUtils.rm_f(Dir[libexec/"pkgconfig/cuobjclient-*.pc"])
     FileUtils.rm_f(Dir[libexec/"targets/*/lib/lib{acc,cu}inj64*"])
     FileUtils.rm_f(Dir[libexec/"targets/*/lib/libcufile_rdma*"])
