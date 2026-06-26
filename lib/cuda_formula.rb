@@ -5,6 +5,7 @@
 module CudaFormula
   def self.included(base)
     base.class_eval do
+      depends_on "patchelf" => :build
       depends_on "cmake" => :test
       depends_on :linux
 
@@ -55,9 +56,17 @@ module CudaFormula
            "--toolkit",
            "--toolkitpath=#{libexec}"
 
+    prune_nonportable_payload
+    patch_elf_rpaths
+
     # NOTE: We do not symlink lib64 or include to avoid conflicts and hacks
     # Dependent formulae should use CMAKE_CUDA_TOOLKIT_ROOT_DIR=#{libexec}
     # or set CUDA_HOME=#{libexec} to find libraries and headers
+
+    library_paths = [
+      "#{libexec}/lib64",
+      *Dir[libexec/"targets/*/lib"].map(&:to_s),
+    ].uniq
 
     # Create wrapper scripts for CUDA binaries
     # This ensures they can find cuda_runtime.h, nvcc.profile, and other dependencies
@@ -67,10 +76,31 @@ module CudaFormula
         #!/bin/bash
         export CUDA_HOME="#{libexec}"
         export PATH="#{libexec}/bin:$PATH"
-        export LD_LIBRARY_PATH="#{libexec}/lib64:$LD_LIBRARY_PATH"
+        export LD_LIBRARY_PATH="#{library_paths.join(":")}:$LD_LIBRARY_PATH"
         exec "#{libexec}/bin/#{binary_name}" "$@"
       EOS
       chmod 0755, bin/binary_name
+    end
+  end
+
+  def prune_nonportable_payload
+    # These bundled GUI/profiler/debugger/GDS tools link host libraries that
+    # Homebrew cannot validate as portable bottle dependencies.
+    FileUtils.rm_rf(Dir[libexec/"nsight-compute-*"])
+    FileUtils.rm_rf(Dir[libexec/"nsight-systems-*"])
+    FileUtils.rm_rf(libexec/"gds")
+
+    FileUtils.rm_f(Dir[libexec/"bin/{ctadvisor,cuda-gdb*,cuda-uninstaller,ncu,ncu-ui,nsight*,nsys,nsys-ui}"])
+    FileUtils.rm_f(Dir[libexec/"pkgconfig/cuobjclient-*.pc"])
+    FileUtils.rm_f(Dir[libexec/"targets/*/lib/libcufile_rdma*"])
+    FileUtils.rm_f(Dir[libexec/"targets/*/lib/libcuobjclient*"])
+  end
+
+  def patch_elf_rpaths
+    Dir[libexec/"**/*"].select { |file| File.file?(file) }.each do |file|
+      next unless File.open(file, "rb") { |f| f.read(4) == "\x7FELF".b }
+
+      system "patchelf", "--set-rpath", "$ORIGIN", file
     end
   end
 

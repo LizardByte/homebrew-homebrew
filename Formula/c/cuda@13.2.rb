@@ -28,5 +28,3 @@ class CudaAT132 < Formula
     sha256 cellar: :any_skip_relocation, x86_64_linux: "d88eb646e3d856b5e60ae68400faa762e4aeb844e56d4e30934e427d69cb9c85"
   end
 end
-
-# test rebuild
