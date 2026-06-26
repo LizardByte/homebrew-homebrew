@@ -26,6 +26,7 @@ class CudaAT131 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 cellar: :any_skip_relocation, x86_64_linux: "0b78c36d6ccb5cb9f52d0d3aeb553ed7eed444595756a5d71d24bfd6a7ce1b48"
+    sha256 cellar: :any, arm64_linux:  "e4810b4ed3b724056898248f3a276d4fd90ab08d45d7232019d85fefc72b867f"
+    sha256 cellar: :any, x86_64_linux: "3d9f716aaf64a96a8b68ca53bd6bf860aad7f05b9571e678406e4a88ec29a378"
   end
 end
