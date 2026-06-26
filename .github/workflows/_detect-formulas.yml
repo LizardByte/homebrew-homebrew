@@ -1,0 +1,365 @@
+---
+name: Detect formulas
+permissions: {}
+
+env:
+  UBUNTU_VERSION: "24.04"
+
+on:
+  workflow_call:
+    inputs:
+      base-sha:
+        required: false
+        type: string
+        default: ""
+      before-sha:
+        required: false
+        type: string
+        default: ""
+      changed-files:
+        required: false
+        type: string
+        default: ""
+      checkout-ref:
+        required: false
+        type: string
+        default: ""
+      event-name:
+        required: true
+        type: string
+      head-sha:
+        required: false
+        type: string
+        default: ""
+      run-homebrew-setup:
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      changed-files:
+        value: ${{ jobs.detect.outputs.changed-files }}
+      disable-failfast:
+        value: ${{ jobs.detect.outputs.disable-failfast }}
+      formula-labels:
+        value: ${{ jobs.detect.outputs.formula-labels }}
+      has-formulae:
+        value: ${{ jobs.detect.outputs.has-formulae }}
+      platforms:
+        value: ${{ jobs.detect.outputs.platforms }}
+      testing-formulae:
+        value: ${{ jobs.detect.outputs.testing-formulae }}
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed-files: ${{ steps.detect.outputs.changed-files }}
+      disable-failfast: ${{ steps.detect.outputs.disable-failfast }}
+      formula-labels: ${{ steps.detect.outputs.formula-labels }}
+      has-formulae: ${{ steps.detect.outputs.has-formulae }}
+      platforms: ${{ steps.detect.outputs.platforms }}
+      testing-formulae: ${{ steps.detect.outputs.testing-formulae }}
+    steps:
+      - name: Checkout
+        if: ${{ ! inputs.run-homebrew-setup }}
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.checkout-ref || github.sha }}
+
+      - name: Set up Homebrew
+        if: ${{ inputs.run-homebrew-setup }}
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+        with:
+          stable: false
+          token: ${{ github.token }}
+
+      - name: Cache Homebrew Bundler RubyGems
+        if: ${{ inputs.run-homebrew-setup }}
+        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8  # v6.0.0
+        with:
+          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+          key: ubuntu-latest-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: ubuntu-latest-rubygems-
+
+      - name: Brew cleanup before
+        if: ${{ inputs.run-homebrew-setup }}
+        run: brew test-bot --fail-fast --only-cleanup-before
+
+      # Homebrew's Linux sandbox requires bwrap on PATH before brew test-bot runs brew doctor.
+      # Install it after cleanup-before, which prunes formulae from the prefix.
+      # The sysctls enable the rootless user namespaces that bwrap needs to create the sandbox.
+      - name: Set up Homebrew Linux sandbox
+        if: ${{ inputs.run-homebrew-setup && runner.os == 'Linux' }}
+        run: |
+          brew install bubblewrap
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+          sudo sysctl -w user.max_user_namespaces=28633
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
+      - name: Brew setup
+        if: ${{ inputs.run-homebrew-setup }}
+        run: brew test-bot --fail-fast --only-setup
+
+      - name: Check syntax
+        if: ${{ inputs.run-homebrew-setup }}
+        run: brew test-bot --fail-fast --only-tap-syntax
+
+      - name: Detect required platforms
+        id: detect
+        env:
+          BASE_SHA: ${{ inputs.base-sha }}
+          BEFORE_SHA: ${{ inputs.before-sha }}
+          EVENT_NAME: ${{ inputs.event-name }}
+          HEAD_SHA: ${{ inputs.head-sha }}
+          INPUT_CHANGED_FILES: ${{ inputs.changed-files }}
+          RUN_HOMEBREW_SETUP: ${{ inputs.run-homebrew-setup }}
+        run: |
+          if [ "${RUN_HOMEBREW_SETUP}" == "true" ]; then
+            TAP_PATH="$(brew --repository "${GITHUB_REPOSITORY}")"
+          else
+            TAP_PATH="${GITHUB_WORKSPACE}"
+          fi
+
+          FORMULA_LABELS=$(find "${TAP_PATH}/Formula" -name "*.rb" -type f | \
+            sed 's|.*/||; s|\.rb$||' | sort -u | paste -sd, -)
+          echo "formula-labels=${FORMULA_LABELS}" >> "${GITHUB_OUTPUT}"
+
+          # Detect changed files in Formula/ and lib/ directories
+          # We check manually rather than relying solely on brew test-bot --only-formulae-detect
+          # because we need to analyze the specific formula files to determine platform requirements
+          if [ -n "${INPUT_CHANGED_FILES}" ]; then
+            ALL_CHANGED="${INPUT_CHANGED_FILES}"
+          elif [ "${EVENT_NAME}" == "pull_request" ]; then
+            ALL_CHANGED=$(git -C "${TAP_PATH}" diff --name-only \
+              "${BASE_SHA}" "${HEAD_SHA}" || true)
+          else
+            ALL_CHANGED=$(git -C "${TAP_PATH}" diff --name-only \
+              "${BEFORE_SHA}" "${HEAD_SHA}" || true)
+          fi
+
+          # Get directly changed formula files
+          CHANGED_FORMULAE=$(echo "${ALL_CHANGED}" | grep '^Formula/' || true)
+
+          # Get changed lib files
+          CHANGED_LIB=$(echo "${ALL_CHANGED}" | grep '^lib/' || true)
+
+          # If lib files changed, find all formulae that require them
+          if [ -n "${CHANGED_LIB}" ]; then
+            echo "Changed lib files detected:"
+            echo "${CHANGED_LIB}"
+
+            # For each changed lib file, find formulas that require it
+            for lib_file in ${CHANGED_LIB}; do
+              lib_basename=$(basename "${lib_file}")
+              echo "Finding formulae that use ${lib_basename}..."
+
+              # Search for require_relative statements referencing this lib file
+              # Pattern: require_relative "../../lib/filename" or similar
+              DEPENDENT_FORMULAE=$(find "${TAP_PATH}/Formula" -name "*.rb" -type f -exec \
+                grep -l "require_relative.*${lib_basename%.rb}" {} \; | \
+                sed "s|${TAP_PATH}/||" || true)
+
+              if [ -n "${DEPENDENT_FORMULAE}" ]; then
+                echo "Found dependent formulae:"
+                echo "${DEPENDENT_FORMULAE}"
+                CHANGED_FORMULAE=$(printf "%s\n%s" "${CHANGED_FORMULAE}" "${DEPENDENT_FORMULAE}" | sort -u)
+              fi
+            done
+          fi
+
+          # Remove empty lines
+          CHANGED_FILES=$(echo "${CHANGED_FORMULAE}" | sed '/^$/d')
+
+          if [ -z "${CHANGED_FILES}" ]; then
+            echo "No formula files changed, skipping tests"
+            {
+              echo "has-formulae=false"
+              echo "platforms=[]"
+              echo "changed-files="
+              echo "testing-formulae="
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "has-formulae=true" >> "${GITHUB_OUTPUT}"
+          echo "Formula files to test:"
+          echo "${CHANGED_FILES}"
+
+          # Output changed files for reuse in other jobs (newline-separated list)
+          {
+            echo "changed-files<<EOF"
+            echo "${CHANGED_FILES}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+          TESTING_FORMULAE=$(echo "${CHANGED_FILES}" | sed '/^$/d; s|.*/||; s|\.rb$||' | paste -sd, -)
+          echo "Formula names to test: ${TESTING_FORMULAE}"
+          echo "testing-formulae=${TESTING_FORMULAE}" >> "${GITHUB_OUTPUT}"
+
+          # Check if any changed formula is in the failfast skiplist
+          DISABLE_FAILFAST=false
+          SKIPLIST_FILE="${TAP_PATH}/ci_config/failfast_skiplist.json"
+
+          if [ -f "${SKIPLIST_FILE}" ]; then
+            echo "Checking formulas against failfast skiplist..."
+
+            for file in ${CHANGED_FILES}; do
+              # Extract formula name from path (e.g., Formula/c/cuda@13.1.rb -> cuda@13.1)
+              FORMULA_NAME=$(basename "${file}" .rb)
+
+              # Check if this formula is in the skiplist
+              if grep -q "\"${FORMULA_NAME}\"" "${SKIPLIST_FILE}"; then
+                echo "  -> ${FORMULA_NAME} is in failfast skiplist"
+                DISABLE_FAILFAST=true
+              fi
+            done
+          fi
+
+          echo "disable-failfast=${DISABLE_FAILFAST}" >> "${GITHUB_OUTPUT}"
+          echo "Failfast disabled: ${DISABLE_FAILFAST}"
+
+          # Default to empty arrays
+          NEEDS_LINUX=false
+          NEEDS_MACOS=false
+          MACOS_VERSIONS=()
+
+          # Check each changed formula
+          for file in ${CHANGED_FILES}; do
+            FULL_PATH="${TAP_PATH}/${file}"
+            if [ -f "${FULL_PATH}" ]; then
+              echo "Checking ${file}..."
+
+              HAS_LINUX_DEPENDS=false
+              HAS_MACOS_DEPENDS=false
+
+              # Build list of files to check for dependencies
+              FILES_TO_CHECK="${FULL_PATH}"
+
+              # If formula includes a module, also check the module file for dependencies
+              if grep -q 'require_relative.*lib/' "${FULL_PATH}"; then
+                # Extract the lib file path
+                LIB_RELATIVE=$(grep -oE "require_relative ['\"].*lib/[^'\"]+['\"]" "${FULL_PATH}" | \
+                  sed "s/require_relative ['\"]//; s/['\"]//g" | head -n 1 || true)
+
+                if [ -n "${LIB_RELATIVE}" ]; then
+                  # Convert relative path to absolute path
+                  # Use realpath or manual resolution since formulas can be in subdirectories
+                  # Formula/c/cuda@13.1.rb with ../../lib/cuda_formula.rb -> lib/cuda_formula.rb
+                  FORMULA_DIR="${TAP_PATH}/$(dirname "${file}")"
+                  LIB_FILE=$(cd "${FORMULA_DIR}" && realpath -m "${LIB_RELATIVE}.rb" 2>/dev/null \
+                    || echo "${TAP_PATH}/${LIB_RELATIVE}.rb")
+
+                  # Fallback: if realpath fails, manually resolve ../../lib/file -> lib/file
+                  if [ ! -f "${LIB_FILE}" ]; then
+                    LIB_FILE="${TAP_PATH}/${LIB_RELATIVE#../../}.rb"
+                  fi
+
+                  if [ -f "${LIB_FILE}" ]; then
+                    echo "  -> Also checking included lib file: ${LIB_FILE}"
+                    FILES_TO_CHECK="${FILES_TO_CHECK} ${LIB_FILE}"
+                  else
+                    echo "  -> Warning: Could not find lib file: ${LIB_FILE}"
+                  fi
+                fi
+              fi
+
+              # Check all relevant files for Linux dependency
+              for check_file in ${FILES_TO_CHECK}; do
+                if grep -q 'depends_on :linux' "${check_file}"; then
+                  HAS_LINUX_DEPENDS=true
+                  break
+                fi
+              done
+
+              # Check all relevant files for macOS dependency
+              for check_file in ${FILES_TO_CHECK}; do
+                if grep -qE 'depends_on :macos|depends_on macos:' "${check_file}"; then
+                  HAS_MACOS_DEPENDS=true
+
+                  # Extract specific macOS versions if specified
+                  # Pattern: depends_on macos: :ventura, depends_on macos: :sonoma, etc.
+                  if grep -qE 'depends_on macos: :' "${check_file}"; then
+                    # Extract the macOS version(s)
+                    MACOS_VERSION_MATCHES=$(grep -oE 'depends_on macos: :[a-z_]+' "${check_file}" | \
+                      sed 's/depends_on macos: ://' || true)
+
+                    for version in ${MACOS_VERSION_MATCHES}; do
+                      case "${version}" in
+                        ventura)
+                          # macOS 13 Ventura - not commonly available in GitHub Actions
+                          MACOS_VERSIONS+=("macos-13")
+                          ;;
+                        sonoma)
+                          # macOS 14 Sonoma
+                          MACOS_VERSIONS+=("macos-14")
+                          ;;
+                        sequoia)
+                          # macOS 15 Sequoia
+                          MACOS_VERSIONS+=("macos-15")
+                          ;;
+                        tahoe)
+                          # macOS 16 Tahoe
+                          MACOS_VERSIONS+=("macos-26")
+                          ;;
+                        *)
+                          echo "  -> Unknown macOS version: ${version}, will use all macOS runners"
+                          ;;
+                      esac
+                    done
+                  fi
+                fi
+              done
+
+              # Determine platform requirements
+              if [ "${HAS_LINUX_DEPENDS}" == "true" ] && [ "${HAS_MACOS_DEPENDS}" == "false" ]; then
+                echo "  -> Linux-only formula detected"
+                NEEDS_LINUX=true
+              elif [ "${HAS_MACOS_DEPENDS}" == "true" ] && [ "${HAS_LINUX_DEPENDS}" == "false" ]; then
+                echo "  -> macOS-only formula detected"
+                NEEDS_MACOS=true
+              else
+                echo "  -> Multi-platform formula (no specific OS dependency)"
+                NEEDS_LINUX=true
+                NEEDS_MACOS=true
+              fi
+            fi
+          done
+
+          # Build the platform matrix
+          # macOS version mapping to GitHub Actions runners:
+          # - macos-13 = macOS 13.x Ventura (x86_64)
+          # - macos-14 = macOS 14.x Sonoma (arm64)
+          # - macos-15 = macOS 15.x Sequoia (arm64)
+          # - macos-26 = macOS 16.x Tahoe (arm64)
+          PLATFORMS="["
+          if [ "${NEEDS_LINUX}" == "true" ]; then
+            PLATFORMS="${PLATFORMS}\"ubuntu-${UBUNTU_VERSION}\","
+            PLATFORMS="${PLATFORMS}\"ubuntu-${UBUNTU_VERSION}-arm\","
+          fi
+          if [ "${NEEDS_MACOS}" == "true" ]; then
+            # If specific macOS versions were detected, use only those
+            if [ ${#MACOS_VERSIONS[@]} -gt 0 ]; then
+              echo "  -> Using specific macOS versions: ${MACOS_VERSIONS[*]}"
+              for macos_runner in "${MACOS_VERSIONS[@]}"; do
+                PLATFORMS="${PLATFORMS}\"${macos_runner}\","
+              done
+            else
+              # Otherwise use all available macOS runners
+              PLATFORMS="${PLATFORMS}\"macos-14\",\"macos-15\",\"macos-26\","
+            fi
+          fi
+
+          # Remove trailing comma and close array
+          PLATFORMS="${PLATFORMS%,}]"
+
+          # If no platforms detected, default to all platforms
+          if [ "${PLATFORMS}" == "]" ]; then
+            PLATFORMS="[\"ubuntu-${UBUNTU_VERSION}\",\"macos-14\",\"macos-15\",\"macos-26\"]"
+          fi
+
+          echo "Platforms to test: ${PLATFORMS}"
+          echo "platforms=${PLATFORMS}" >> "${GITHUB_OUTPUT}"
