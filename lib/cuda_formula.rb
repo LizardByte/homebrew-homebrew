@@ -5,8 +5,10 @@
 module CudaFormula
   def self.included(base)
     base.class_eval do
+      depends_on "patchelf" => :build
       depends_on "cmake" => :test
       depends_on :linux
+      keg_only :versioned_formula
 
       # Default livecheck - will be overridden by setup_livecheck if CUDA_VERSION is defined
       livecheck do
@@ -55,22 +57,73 @@ module CudaFormula
            "--toolkit",
            "--toolkitpath=#{libexec}"
 
+    prune_nonportable_payload
+    patch_elf_rpaths
+
     # NOTE: We do not symlink lib64 or include to avoid conflicts and hacks
     # Dependent formulae should use CMAKE_CUDA_TOOLKIT_ROOT_DIR=#{libexec}
     # or set CUDA_HOME=#{libexec} to find libraries and headers
 
+    library_paths = [
+      "#{libexec}/lib64",
+      *Dir[libexec/"extras/CUPTI/lib64"].map(&:to_s),
+      *Dir[libexec/"targets/*/lib"].map(&:to_s),
+    ].uniq
+
     # Create wrapper scripts for CUDA binaries
     # This ensures they can find cuda_runtime.h, nvcc.profile, and other dependencies
+    wrapper_bin = libexec/"homebrew/bin"
+    wrapper_bin.mkpath
+
     Dir[libexec/"bin/*"].select { |f| File.file?(f) && File.executable?(f) }.each do |exe|
       binary_name = File.basename(exe)
-      (bin/binary_name).write <<~EOS
+      (wrapper_bin/binary_name).write <<~EOS
         #!/bin/bash
         export CUDA_HOME="#{libexec}"
         export PATH="#{libexec}/bin:$PATH"
-        export LD_LIBRARY_PATH="#{libexec}/lib64:$LD_LIBRARY_PATH"
+        export LD_LIBRARY_PATH="#{library_paths.join(":")}:$LD_LIBRARY_PATH"
         exec "#{libexec}/bin/#{binary_name}" "$@"
       EOS
-      chmod 0755, bin/binary_name
+      chmod 0755, wrapper_bin/binary_name
+    end
+  end
+
+  def prune_nonportable_payload
+    # These bundled GUI/profiler/debugger/GDS tools link host libraries that
+    # Homebrew cannot validate as portable bottle dependencies.
+    FileUtils.rm_rf(Dir[libexec/"nsight-compute-*"])
+    FileUtils.rm_rf(Dir[libexec/"nsight-systems-*"])
+    FileUtils.rm_rf(libexec/"extras/demo_suite")
+    FileUtils.rm_rf(libexec/"gds")
+    FileUtils.rm_rf(libexec/"libnvvp")
+
+    FileUtils.rm_f(Dir[libexec/"bin/{ctadvisor,cuda-gdb*,cuda-uninstaller,ncu,ncu-ui,nsight*,nsys,nsys-ui}"])
+    FileUtils.rm_f(Dir[libexec/"bin/{nvprof,nvvp}"])
+    FileUtils.rm_f(Dir[libexec/"pkgconfig/cuobjclient-*.pc"])
+    FileUtils.rm_f(Dir[libexec/"targets/*/lib/lib{acc,cu}inj64*"])
+    FileUtils.rm_f(Dir[libexec/"targets/*/lib/libcufile_rdma*"])
+    FileUtils.rm_f(Dir[libexec/"targets/*/lib/libcuobjclient*"])
+  end
+
+  def patch_elf_rpaths
+    library_roots = [
+      libexec/"lib64",
+      libexec/"extras/CUPTI/lib64",
+      *Dir[libexec/"targets/*/lib"].map { |path| Pathname.new(path) },
+    ].select(&:directory?)
+
+    Dir[libexec/"**/*"].map { |path| Pathname.new(path) }.select(&:file?).each do |file|
+      next unless File.open(file, "rb") { |f| f.read(4) == "\x7FELF".b }
+
+      file_dir = file.dirname
+      rpaths = library_roots.filter_map do |root|
+        relative_path = root.relative_path_from(file_dir).to_s
+        next "$ORIGIN" if relative_path == "."
+
+        "$ORIGIN/#{relative_path}"
+      end
+
+      system "patchelf", "--set-rpath", rpaths.unshift("$ORIGIN").uniq.join(":"), file
     end
   end
 
@@ -80,18 +133,18 @@ module CudaFormula
         #{opt_libexec}
 
       Wrapper scripts for CUDA binaries are available at:
-        #{opt_bin}/nvcc
+        #{opt_libexec}/homebrew/bin/nvcc
 
       These wrappers automatically set CUDA_HOME for you.
 
       For CMake projects (sunshine-beta example):
         cuda_path = Formula["lizardbyte/homebrew/cuda@13.1"]
-        args << "-DCMAKE_CUDA_COMPILER=\#{cuda_path.opt_bin}/nvcc"
+        args << "-DCMAKE_CUDA_COMPILER=\#{cuda_path.opt_libexec}/homebrew/bin/nvcc"
         args << "-DCMAKE_CUDA_TOOLKIT_ROOT_DIR=\#{cuda_path.opt_libexec}"
 
       For shell/manual configuration:
         export CUDA_HOME=#{opt_libexec}
-        export PATH=#{opt_bin}:$PATH
+        export PATH=#{opt_libexec}/homebrew/bin:$PATH
         export LD_LIBRARY_PATH=#{opt_libexec}/lib64:$LD_LIBRARY_PATH
 
       This formula only installs the CUDA Toolkit (compiler and libraries).
@@ -103,8 +156,11 @@ module CudaFormula
   end
 
   def test
+    cuda_nvcc = libexec/"homebrew/bin/nvcc"
+
     # Test that nvcc is available and can report its version
-    assert_match version.to_s, shell_output("#{bin}/nvcc --version")
+    cuda_release = version.to_s[/^\d+\.\d+/]
+    assert_match "release #{cuda_release}", shell_output("#{cuda_nvcc} --version")
 
     # Test compiling a simple CUDA program
     (testpath/"test.cu").write <<~EOS
@@ -121,7 +177,7 @@ module CudaFormula
     EOS
 
     # Compile the test program
-    system bin/"nvcc", "test.cu", "-o", "test"
+    system cuda_nvcc, "test.cu", "-o", "test"
     assert_path_exists testpath/"test"
 
     # Test that CMake can find the CUDA toolkit
@@ -139,7 +195,7 @@ module CudaFormula
     # Try to configure the CMake project
     # This will fail if CMake cannot find a working CUDA compiler
     system "cmake", "-S", testpath, "-B", testpath/"build",
-           "-DCMAKE_CUDA_COMPILER=#{bin}/nvcc"
+           "-DCMAKE_CUDA_COMPILER=#{cuda_nvcc}"
 
     # Verify CMake found the CUDA toolkit
     assert_path_exists testpath/"build/CMakeCache.txt"

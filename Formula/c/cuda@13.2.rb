@@ -11,6 +11,8 @@ class CudaAT132 < Formula
   INTEL_SHA256 = "5514a3fe7bcea92b25073c7c100c3e64e7961a7e1dbad6955adb8b59806053f0".freeze
   ARM_SHA256 = "38560e0c48eba793c883ea1ada6ad4c37b744cb5284034d16fd7ee57f95dda04".freeze
 
+  revision 1
+
   # Set up version-specific livecheck
   CudaFormula.setup_livecheck(self)
 
@@ -24,7 +26,7 @@ class CudaAT132 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 cellar: :any_skip_relocation, arm64_linux:  "e8c8578bee5c2512fec6642822222a55f658b8c68a7d580e52a492a1952bc1cd"
-    sha256 cellar: :any_skip_relocation, x86_64_linux: "d88eb646e3d856b5e60ae68400faa762e4aeb844e56d4e30934e427d69cb9c85"
+    sha256 cellar: :any, arm64_linux:  "22fb1befa9a6e7357f21df0258e790d508ee0ff86638e6205915cd65a635b33d"
+    sha256 cellar: :any, x86_64_linux: "a11ab7d98090e2bb46536db09ca874c8fc861d597d24cf002d60a8ec3e072145"
   end
 end
