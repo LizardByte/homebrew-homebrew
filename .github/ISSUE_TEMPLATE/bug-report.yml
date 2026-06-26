@@ -18,8 +18,9 @@ body:
   - type: dropdown
     id: _formulas
     attributes:
-      label: Formula Name
-      description: Which Formula are you trying to install?
+      label: Formula Names
+      description: Which Formula(s) are you trying to install?
+      multiple: true
       options:
         - cuda@12.9
         - cuda@13.0

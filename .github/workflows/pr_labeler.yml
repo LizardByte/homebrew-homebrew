@@ -1,0 +1,139 @@
+---
+name: Pull Request labeler
+permissions: {}
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+jobs:
+  changed-files:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      files: ${{ steps.changed-files.outputs.files }}
+    steps:
+      - name: List changed files
+        id: changed-files
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100
+            });
+
+            const names = files.flatMap((file) => (
+              file.previous_filename ? [file.filename, file.previous_filename] : [file.filename]
+            ));
+
+            core.setOutput('files', [...new Set(names)].join('\n'));
+
+  detect-formulas:
+    needs: changed-files
+    uses: ./.github/workflows/_detect-formulas.yml
+    permissions:
+      contents: read
+    with:
+      changed-files: ${{ needs.changed-files.outputs.files }}
+      checkout-ref: ${{ github.event.pull_request.base.sha }}
+      event-name: pull_request
+      run-homebrew-setup: false
+
+  label-formulas:
+    needs: detect-formulas
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Set formula labels
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          FORMULA_LABELS: ${{ needs.detect-formulas.outputs.formula-labels }}
+          TESTING_FORMULAE: ${{ needs.detect-formulas.outputs.testing-formulae }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const allFormulaLabels = new Set((process.env.FORMULA_LABELS || '')
+              .split(',')
+              .map((label) => label.trim())
+              .filter(Boolean));
+
+            const labels = [...new Set((process.env.TESTING_FORMULAE || '')
+              .split(',')
+              .map((label) => label.trim())
+              .filter(Boolean))]
+              .sort();
+
+            for (const label of labels) {
+              allFormulaLabels.add(label);
+            }
+
+            const currentLabels = await github.paginate(github.rest.issues.listLabelsOnIssue, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100
+            });
+
+            const staleLabels = currentLabels
+              .map((label) => label.name)
+              .filter((label) => allFormulaLabels.has(label) && !labels.includes(label));
+
+            for (const label of staleLabels) {
+              console.log(`Removing stale formula label: ${label}`);
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                name: label
+              });
+            }
+
+            if (labels.length === 0) {
+              console.log('No formula labels detected.');
+              return;
+            }
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+
+                console.log(`Creating missing formula label: ${label}`);
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label,
+                  color: 'ededed',
+                  description: `Formula: ${label}`
+                });
+              }
+            }
+
+            console.log(`Adding formula labels: ${labels.join(', ')}`);
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels
+            });
