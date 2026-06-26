@@ -65,6 +65,7 @@ module CudaFormula
 
     library_paths = [
       "#{libexec}/lib64",
+      *Dir[libexec/"extras/CUPTI/lib64"].map(&:to_s),
       *Dir[libexec/"targets/*/lib"].map(&:to_s),
     ].uniq
 
@@ -88,19 +89,36 @@ module CudaFormula
     # Homebrew cannot validate as portable bottle dependencies.
     FileUtils.rm_rf(Dir[libexec/"nsight-compute-*"])
     FileUtils.rm_rf(Dir[libexec/"nsight-systems-*"])
+    FileUtils.rm_rf(libexec/"extras/demo_suite")
     FileUtils.rm_rf(libexec/"gds")
+    FileUtils.rm_rf(libexec/"libnvvp")
 
-    FileUtils.rm_f(Dir[libexec/"bin/{ctadvisor,cuda-gdb*,cuda-uninstaller,ncu,ncu-ui,nsight*,nsys,nsys-ui}"])
+    FileUtils.rm_f(Dir[libexec/"bin/{ctadvisor,cuda-gdb*,cuda-uninstaller,ncu,ncu-ui,nsight*,nsys,nsys-ui,nvprof,nvvp}"])
     FileUtils.rm_f(Dir[libexec/"pkgconfig/cuobjclient-*.pc"])
+    FileUtils.rm_f(Dir[libexec/"targets/*/lib/lib{acc,cu}inj64*"])
     FileUtils.rm_f(Dir[libexec/"targets/*/lib/libcufile_rdma*"])
     FileUtils.rm_f(Dir[libexec/"targets/*/lib/libcuobjclient*"])
   end
 
   def patch_elf_rpaths
+    library_roots = [
+      libexec/"lib64",
+      libexec/"extras/CUPTI/lib64",
+      *Dir[libexec/"targets/*/lib"],
+    ].select(&:directory?)
+
     Dir[libexec/"**/*"].select { |file| File.file?(file) }.each do |file|
       next unless File.open(file, "rb") { |f| f.read(4) == "\x7FELF".b }
 
-      system "patchelf", "--set-rpath", "$ORIGIN", file
+      file_dir = file.dirname
+      rpaths = library_roots.filter_map do |root|
+        relative_path = root.relative_path_from(file_dir).to_s
+        next "$ORIGIN" if relative_path == "."
+
+        "$ORIGIN/#{relative_path}"
+      end
+
+      system "patchelf", "--set-rpath", rpaths.unshift("$ORIGIN").uniq.join(":"), file
     end
   end
 
