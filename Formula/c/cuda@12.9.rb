@@ -11,6 +11,8 @@ class CudaAT129 < Formula
   INTEL_SHA256 = "0f6d806ddd87230d2adbe8a6006a9d20144fdbda9de2d6acc677daa5d036417a".freeze
   ARM_SHA256 = "64f47ab791a76b6889702425e0755385f5fa216c5a9f061875c7deed5f08cdb6".freeze
 
+  revision 1
+
   # Set up version-specific livecheck
   CudaFormula.setup_livecheck(self)
 
