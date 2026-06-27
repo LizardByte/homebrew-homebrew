@@ -14,7 +14,7 @@ class Sunshine < Formula
   url "https://github.com/LizardByte/Sunshine.git",
     tag: "v2026.516.143833"
   license all_of: ["GPL-3.0-only"]
-  revision 1
+  revision 2
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
@@ -31,14 +31,13 @@ class Sunshine < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "ca316bf66d3119037beab511c0043b9dae74c6e397066436e5e91ff16bbbbc88"
-    sha256 arm64_sequoia: "2d820a687bc2c582466d664775c63b3f6572780e253e90c196e97ef02de23bc7"
-    sha256 arm64_sonoma:  "afda612549511738422a19f509d8682d822ea7d330c2771709278ad55e095d7f"
-    sha256 arm64_linux:   "cd9a326604c8f313701160ea132a77b1ac569dbbc7c1c279b26204674c2e02c1"
-    sha256 x86_64_linux:  "f2e0393c42e4114e93dcf2664888aa4cd46f96bef56f306d635fa17e25973e96"
+    sha256 arm64_tahoe:   "5d44735aaac45fe262ce825d3ca59350beda48bf16393032dd31230171df73fe"
+    sha256 arm64_sequoia: "ddb1dbf5abe9092c043257ace514310b3f3e05f3282b832dfdd2a81f7697c620"
+    sha256 arm64_sonoma:  "e812fe008af90f029aa62e31f7a45f0f2bb99f2c6aef76b703c0ec7a3d14974f"
+    sha256 arm64_linux:   "ef0fe0b4cbdd033cf205fd0a7655e45b58232411af048fcb9152bfb6ba0598a7"
+    sha256 x86_64_linux:  "f81808dbcd3f4f67d869cc212989f05f346c18184674470236e5b05ff7c3a1e9"
   end
 
-  option "with-cuda", "Enable CUDA support (Linux only)"
   option "with-docs", "Enable docs build"
   option "with-static-boost", "Enable static link of Boost libraries"
   option "without-static-boost", "Disable static link of Boost libraries" # default option
@@ -62,7 +61,7 @@ class Sunshine < Formula
 
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
-    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => :build if build.with? "cuda"
+    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => :build
     depends_on "python3" => :build
     depends_on "at-spi2-core"
     depends_on "avahi"
@@ -236,12 +235,7 @@ class Sunshine < Formula
   def add_cuda_args(args)
     return unless OS.linux?
 
-    if build.with?("cuda")
-      configure_cuda(args)
-    else
-      args << "-DSUNSHINE_ENABLE_CUDA=OFF"
-      ohai "CUDA disabled"
-    end
+    configure_cuda(args)
   end
 
   def configure_cuda(args)
