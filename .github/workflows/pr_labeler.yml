@@ -8,7 +8,6 @@ on:
       - opened
       - reopened
       - synchronize
-      - ready_for_review
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.event.pull_request.number }}"
@@ -56,7 +55,7 @@ jobs:
     needs: detect-formulas
     runs-on: ubuntu-latest
     permissions:
-      issues: write
+      pull-requests: write
     steps:
       - name: Set formula labels
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
@@ -66,16 +65,35 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const allFormulaLabels = new Set((process.env.FORMULA_LABELS || '')
-              .split(',')
-              .map((label) => label.trim())
-              .filter(Boolean));
+            const reservedAutomationLabels = new Set([
+              'bottle-published',
+              'pr-pull'
+            ]);
 
-            const labels = [...new Set((process.env.TESTING_FORMULAE || '')
+            const parseLabels = (value) => [...new Set((value || '')
               .split(',')
               .map((label) => label.trim())
-              .filter(Boolean))]
+              .filter(Boolean))];
+
+            const isReservedAutomationLabel = (label) => (
+              reservedAutomationLabels.has(label.toLowerCase())
+            );
+
+            const formulaLabels = parseLabels(process.env.FORMULA_LABELS)
+              .filter((label) => !isReservedAutomationLabel(label));
+
+            const labels = parseLabels(process.env.TESTING_FORMULAE)
               .sort();
+
+            const deniedLabels = labels.filter(isReservedAutomationLabel);
+
+            if (deniedLabels.length > 0) {
+              throw new Error(
+                `Formula-derived labels cannot use reserved automation labels: ${deniedLabels.join(', ')}`
+              );
+            }
+
+            const allFormulaLabels = new Set(formulaLabels);
 
             for (const label of labels) {
               allFormulaLabels.add(label);
