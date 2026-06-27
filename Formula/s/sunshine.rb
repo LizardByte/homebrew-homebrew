@@ -14,6 +14,7 @@ class Sunshine < Formula
   url "https://github.com/LizardByte/Sunshine.git",
     tag: "v2026.516.143833"
   license all_of: ["GPL-3.0-only"]
+  revision 1
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
@@ -30,12 +31,11 @@ class Sunshine < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 2
-    sha256 arm64_tahoe:   "92c51c36e60a9adcc5226bca28b5608ed61e82f1f3a340249e65b73a11505026"
-    sha256 arm64_sequoia: "3946551b8ea3040de59021b8945e7f3ec085b89c6cae252f40d9253f782d64ff"
-    sha256 arm64_sonoma:  "a98b6e42c05d2ffb2039f461c6e9e064d464c99e83b63d3b67f88b6cb536121f"
-    sha256 arm64_linux:   "af40bb205e7b25c4dc328320796dddefd43a299520a283faaf5032c7527938e8"
-    sha256 x86_64_linux:  "d6f715efd603fac1dbe7d8cd342b4187aa5f75b83eeb9980d60bca837ce29c42"
+    sha256 arm64_tahoe:   "ca316bf66d3119037beab511c0043b9dae74c6e397066436e5e91ff16bbbbc88"
+    sha256 arm64_sequoia: "2d820a687bc2c582466d664775c63b3f6572780e253e90c196e97ef02de23bc7"
+    sha256 arm64_sonoma:  "afda612549511738422a19f509d8682d822ea7d330c2771709278ad55e095d7f"
+    sha256 arm64_linux:   "cd9a326604c8f313701160ea132a77b1ac569dbbc7c1c279b26204674c2e02c1"
+    sha256 x86_64_linux:  "f2e0393c42e4114e93dcf2664888aa4cd46f96bef56f306d635fa17e25973e96"
   end
 
   option "with-cuda", "Enable CUDA support (Linux only)"
@@ -138,6 +138,10 @@ class Sunshine < Formula
     cause "Array out of bounds error when compiling glad sources"
   end
 
+  # Backport https://github.com/LizardByte/Sunshine/pull/5223 so Linux Homebrew
+  # installs service/udev files inside the prefix instead of system paths.
+  patch :DATA
+
   def setup_build_environment
     ENV["BRANCH"] = ""
     ENV["BUILD_VERSION"] = "2026.516.143833"
@@ -177,6 +181,7 @@ class Sunshine < Formula
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+    args << "-DSUNSHINE_EXECUTABLE_PATH=#{opt_bin}/sunshine" if OS.linux?
     # Point cmake at the venv Python that has jinja2 installed (set up in setup_build_environment)
     args << "-DPython_EXECUTABLE=#{@glad_python}" if @glad_python
     args
@@ -231,7 +236,7 @@ class Sunshine < Formula
   def add_cuda_args(args)
     return unless OS.linux?
 
-    if build.with?(CUDA_FORMULA)
+    if build.with?("cuda")
       configure_cuda(args)
     else
       args << "-DSUNSHINE_ENABLE_CUDA=OFF"
@@ -241,11 +246,12 @@ class Sunshine < Formula
 
   def configure_cuda(args)
     cuda_path = Formula["lizardbyte/homebrew/#{CUDA_FORMULA}"]
-    nvcc_path = "#{cuda_path.opt_bin}/nvcc"
+    nvcc_path = "#{cuda_path.opt_libexec}/homebrew/bin/nvcc"
     gcc_path = Formula[GCC_FORMULA]
 
     args << "-DSUNSHINE_ENABLE_CUDA=ON"
     args << "-DCMAKE_CUDA_COMPILER:PATH=#{nvcc_path}"
+    args << "-DCMAKE_CUDA_TOOLKIT_ROOT_DIR:PATH=#{cuda_path.opt_libexec}"
     args << "-DCMAKE_CUDA_HOST_COMPILER=#{gcc_path.opt_bin}/gcc-#{GCC_VERSION}"
     ohai "CUDA enabled with nvcc at: #{nvcc_path}"
   end
@@ -284,7 +290,8 @@ class Sunshine < Formula
   end
 
   service do
-    run [opt_bin/"sunshine", "~/.config/sunshine/sunshine.conf"]
+    run [opt_bin/"sunshine", "~/.config/sunshine/sunshine.conf"] if OS.mac?
+    name linux: "app-dev.lizardbyte.app.Sunshine" if OS.linux?
   end
 
   def post_install
@@ -347,3 +354,22 @@ class Sunshine < Formula
   end
 end
 # rebuild: 1779602876
+__END__
+diff --git a/cmake/packaging/linux.cmake b/cmake/packaging/linux.cmake
+index 3bff6328..8f493b07 100644
+--- a/cmake/packaging/linux.cmake
++++ b/cmake/packaging/linux.cmake
+@@ -18,6 +18,13 @@ if(${SUNSHINE_BUILD_APPIMAGE} OR ${SUNSHINE_BUILD_FLATPAK})
+             DESTINATION "${SUNSHINE_ASSETS_DIR}/modules-load.d")
+     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/app-${PROJECT_FQDN}.service"
+             DESTINATION "${SUNSHINE_ASSETS_DIR}/systemd/user")
++elseif(${SUNSHINE_BUILD_HOMEBREW})
++    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/linux/misc/60-sunshine.rules"
++            DESTINATION "${CMAKE_INSTALL_LIBDIR}/udev/rules.d")
++    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/linux/misc/60-sunshine.conf"
++            DESTINATION "${CMAKE_INSTALL_LIBDIR}/modules-load.d")
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/app-${PROJECT_FQDN}.service"
++            DESTINATION ".")
+ else()
+     find_package(Systemd)
+     find_package(Udev)
