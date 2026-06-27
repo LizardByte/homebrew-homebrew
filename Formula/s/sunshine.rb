@@ -14,7 +14,7 @@ class Sunshine < Formula
   url "https://github.com/LizardByte/Sunshine.git",
     tag: "v2026.516.143833"
   license all_of: ["GPL-3.0-only"]
-  revision 1
+  revision 2
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
@@ -38,7 +38,6 @@ class Sunshine < Formula
     sha256 x86_64_linux:  "f2e0393c42e4114e93dcf2664888aa4cd46f96bef56f306d635fa17e25973e96"
   end
 
-  option "with-cuda", "Enable CUDA support (Linux only)"
   option "with-docs", "Enable docs build"
   option "with-static-boost", "Enable static link of Boost libraries"
   option "without-static-boost", "Disable static link of Boost libraries" # default option
@@ -62,7 +61,7 @@ class Sunshine < Formula
 
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
-    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => :build if build.with? "cuda"
+    depends_on "lizardbyte/homebrew/#{CUDA_FORMULA}" => :build
     depends_on "python3" => :build
     depends_on "at-spi2-core"
     depends_on "avahi"
@@ -236,12 +235,7 @@ class Sunshine < Formula
   def add_cuda_args(args)
     return unless OS.linux?
 
-    if build.with?("cuda")
-      configure_cuda(args)
-    else
-      args << "-DSUNSHINE_ENABLE_CUDA=OFF"
-      ohai "CUDA disabled"
-    end
+    configure_cuda(args)
   end
 
   def configure_cuda(args)
