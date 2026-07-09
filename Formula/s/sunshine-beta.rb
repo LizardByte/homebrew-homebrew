@@ -17,7 +17,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.704.34109"
+    tag: "v2026.709.11046"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -39,11 +39,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "60f9818bd120d73014a48e23c44b3d04537bdec20cd5c7f06eac366c30bc01a7"
-    sha256 arm64_sequoia: "3188f53b7680a45186664a449ce6559e384fe912370dd0d860e95fd6b72b3105"
-    sha256 arm64_sonoma:  "cd6a09ec2c1aa27173a0294808ac441cb82f2a24af307da4cb873459a152bbd2"
-    sha256 arm64_linux:   "4a6185ff94402e822e09d9cc5e64ae3352cfe532cc8c23c0e0ce3e78b5bc5302"
-    sha256 x86_64_linux:  "920385f668f74af99b928803aac3d6f1acdbeeee7541e5a26e28798912d800b8"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_linux:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-docs", "Enable docs build"
@@ -112,13 +112,6 @@ class SunshineBeta < Formula
       url "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz"
       sha256 "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
     end
-
-    # setuptools provides pkg_resources which glad's plugin.py imports at build time.
-    # setuptools >= 81 removed pkg_resources; this is the last release that still ships it.
-    resource "setuptools" do
-      url "https://files.pythonhosted.org/packages/76/95/faf61eb8363f26aa7e1d762267a8d602a1b26d4f3a1e758e92cb3cb8b054/setuptools-80.10.2.tar.gz"
-      sha256 "8b0e9d10c784bf7d262c4e5ec5d4ec94127ce206e8738f29a437945fbc219b70"
-    end
   end
 
   conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
@@ -140,8 +133,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.704.34109"
-    ENV["COMMIT"] = "3891e6a1822a221c6f67c1a77d32b9689a781ac9"
+    ENV["BUILD_VERSION"] = "2026.709.11046"
+    ENV["COMMIT"] = "ce1460ebc5fedb305efc425cbfddee927633ea54"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -485,4 +478,3 @@ class SunshineBeta < Formula
     end
   end
 end
-# rebuild: 1783231898
