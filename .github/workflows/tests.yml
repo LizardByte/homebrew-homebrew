@@ -59,6 +59,45 @@ jobs:
           stable: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Select configured Xcode
+        if: runner.os == 'macOS'
+        env:
+          MATRIX_OS: ${{ matrix.os }}
+          TESTING_FORMULAE: ${{ needs.setup.outputs.testing-formulae }}
+        run: |
+          TAP_PATH="$(brew --repository "${GITHUB_REPOSITORY}")"
+          XCODE_CONFIG="${TAP_PATH}/ci_config/xcode_versions.json"
+          MACOS_VERSION="${MATRIX_OS#macos-}"
+
+          XCODE_VERSIONS=$(jq -r \
+            --arg formulae "${TESTING_FORMULAE}" \
+            --arg macos_version "${MACOS_VERSION}" \
+            '[($formulae | split(",")[]) as $formula |
+              .[$formula][$macos_version] // empty] | unique[]' \
+            "${XCODE_CONFIG}")
+          XCODE_VERSION_COUNT=$(printf '%s\n' "${XCODE_VERSIONS}" | sed '/^$/d' | wc -l | tr -d ' ')
+
+          if [ "${XCODE_VERSION_COUNT}" -eq 0 ]; then
+            echo "No custom Xcode version configured for macOS ${MACOS_VERSION}."
+            exit 0
+          fi
+
+          if [ "${XCODE_VERSION_COUNT}" -gt 1 ]; then
+            echo "Conflicting Xcode versions configured for ${TESTING_FORMULAE} on macOS ${MACOS_VERSION}:"
+            echo "${XCODE_VERSIONS}"
+            exit 1
+          fi
+
+          XCODE_PATH="/Applications/Xcode_${XCODE_VERSIONS}.app"
+          if [ ! -d "${XCODE_PATH}" ]; then
+            echo "Configured Xcode installation does not exist: ${XCODE_PATH}"
+            exit 1
+          fi
+
+          echo "Selecting Xcode ${XCODE_VERSIONS} for ${TESTING_FORMULAE} on macOS ${MACOS_VERSION}."
+          sudo xcode-select --switch "${XCODE_PATH}"
+          xcodebuild -version
+
       - name: Cache Homebrew Bundler RubyGems
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
