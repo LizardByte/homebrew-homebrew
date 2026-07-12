@@ -17,7 +17,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.709.11046"
+    tag: "v2026.712.43005"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -39,12 +39,10 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 1
-    sha256 arm64_tahoe:   "8fb6ebf5994d6ec242567cd8e483ae82b093b3367ccce439e1d6fd6aeaf834d0"
-    sha256 arm64_sequoia: "ff062b6c042b3aba0b0b7bd22b697a1e655b1c81cd95adbffdba5124df9f3d88"
-    sha256 arm64_sonoma:  "c8a01b08fb54144c4a04faa86fadb4faa59905f921bbd62b75a7cf265f25f18d"
-    sha256 arm64_linux:   "78d4e609b276489569d774d10490a6ccb163313353cec1f5f9273430d1acd4b8"
-    sha256 x86_64_linux:  "3a31baeb4cc1a1786ed317582576acb8dc2ccafd05d25af04bd665254769c11d"
+    sha256 arm64_tahoe:   "111fab069675646a63280623b0684c673b1be60297a73e71c843f7e475a8c0bf"
+    sha256 arm64_sequoia: "e2fd1cf1b4ed308b0320d38889fd7856fbf54ba46da3a93c8b6b2113d82d9d0b"
+    sha256 arm64_linux:   "d1a8762aa5844fd7c32ad192ccea13fa3263c41b00f0d76420ea22182aa68b0d"
+    sha256 x86_64_linux:  "8adc5cf91d40d3f77d0ed93c60f4a9df707e19e254f4abdcab30caa6dcfd0cb9"
   end
 
   option "with-docs", "Enable docs build"
@@ -62,6 +60,10 @@ class SunshineBeta < Formula
   depends_on "miniupnpc"
   depends_on "openssl@3"
   depends_on "opus"
+
+  on_sonoma do
+    depends_on xcode: ["16.2", :build] # required for jthreads on macos-14
+  end
 
   on_linux do
     depends_on GCC_FORMULA => [:build, :test]
@@ -134,8 +136,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.709.11046"
-    ENV["COMMIT"] = "ce1460ebc5fedb305efc425cbfddee927633ea54"
+    ENV["BUILD_VERSION"] = "2026.712.43005"
+    ENV["COMMIT"] = "3377f7a73f8768518430f4c771987153fcd77b77"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -479,4 +481,3 @@ class SunshineBeta < Formula
     end
   end
 end
-# rebuild: 1783834473
