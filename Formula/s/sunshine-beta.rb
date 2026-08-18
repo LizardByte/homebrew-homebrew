@@ -17,7 +17,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.816.192458"
+    tag: "v2026.817.185037"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -39,11 +39,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "8f91eb18a426a8e957c7abfb0426b11c2bf93132a64b38a1b52db4660c6ea231"
-    sha256 arm64_sequoia: "4f3b17855df34e4f9e96f38cca0b2df584acd7f6b468919ee4633bb8fb15bba0"
-    sha256 arm64_sonoma:  "01c7d5ce6ca57931c2f720b40979b0ec30b07bc8f46cc5691a236561b320677d"
-    sha256 arm64_linux:   "6243b6bc21a2f677d00fd63f66b485fdc65ebeee61684b9ea108d00d200c1663"
-    sha256 x86_64_linux:  "461d1c00d25d8b8d06e411574dafbc4bf9a8de9b158ea645c40627b680c93a35"
+    sha256 arm64_tahoe:   "33ae0d44dd517af05346adec5488ec4b031aa19e6902b03bc990464f35620fcf"
+    sha256 arm64_sequoia: "f7ab651e17e87cd5fc8c59ae614a2cc43c69d06786d20bf6ad43a94d0863379f"
+    sha256 arm64_sonoma:  "4b18317e448320133938c11f42e72f67dff70b92a177d3ac49a4ca840b406bad"
+    sha256 arm64_linux:   "9286784e2ed6cf6e655863cac80ff0657421f47857008841418ca6f6e23a1f43"
+    sha256 x86_64_linux:  "b890283d56d20efa839fe92197e2b27fe6c5e520be251433f336f63b17c1f097"
   end
 
   option "with-docs", "Enable docs build"
@@ -137,8 +137,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.816.192458"
-    ENV["COMMIT"] = "687e12d013a838e1769ffdf996eb1d5ef8402660"
+    ENV["BUILD_VERSION"] = "2026.817.185037"
+    ENV["COMMIT"] = "f0ea53694420d48303c6cfe95b12136c65ed5af5"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -370,11 +370,20 @@ class SunshineBeta < Formula
     source_index = lines.index { |line| line.start_with?("SF:") }
     return unless source_index
 
-    source_path = lines[source_index].delete_prefix("SF:").strip
-    source_prefix = source_prefixes.find { |prefix| source_path.start_with?(prefix) }
-    return unless source_prefix
+    source_path = Pathname.new(lines[source_index].delete_prefix("SF:").strip).cleanpath.to_s
+    # Homebrew remaps the formula build path to ".". LLVM may then resolve that
+    # relative path from CMake's compilation directory at "build/tests".
+    relative_source_path = if source_path.start_with?("build/tests/src/")
+      source_path.delete_prefix("build/tests/")
+    elsif source_path.start_with?("src/")
+      source_path
+    else
+      source_prefix = source_prefixes.find { |prefix| source_path.start_with?(prefix) }
+      "src/#{source_path.delete_prefix(source_prefix)}" if source_prefix
+    end
+    return unless relative_source_path
 
-    lines[source_index] = "SF:src/#{source_path.delete_prefix(source_prefix)}\n"
+    lines[source_index] = "SF:#{relative_source_path}\n"
     "#{lines.join}end_of_record\n"
   end
 
@@ -479,6 +488,42 @@ class SunshineBeta < Formula
         run_test_suite testpath
         generate_coverage_report testpath, ENV.fetch("HOMEBREW_BUILDPATH", "")
       end
+
+      lcov = <<~LCOV
+        SF:./src/remapped.cpp
+        DA:1,1
+        end_of_record
+        SF:build/tests/src/remapped_from_compile_dir.cpp
+        DA:1,1
+        end_of_record
+        SF:src/relative.cpp
+        DA:1,1
+        end_of_record
+        SF:#{testpath}/src/absolute.cpp
+        DA:1,1
+        end_of_record
+        SF:./tests/excluded.cpp
+        DA:1,1
+        end_of_record
+        SF:build/tests/tests/excluded_from_compile_dir.cpp
+        DA:1,1
+        end_of_record
+      LCOV
+      expected_lcov = <<~LCOV
+        SF:src/remapped.cpp
+        DA:1,1
+        end_of_record
+        SF:src/remapped_from_compile_dir.cpp
+        DA:1,1
+        end_of_record
+        SF:src/relative.cpp
+        DA:1,1
+        end_of_record
+        SF:src/absolute.cpp
+        DA:1,1
+        end_of_record
+      LCOV
+      assert_equal expected_lcov, lcov_for_source_files(lcov, testpath)
     end
   end
 end
