@@ -348,7 +348,7 @@ class Sunshine < Formula
     end
   end
 end
-# rebuild: 1786849579
+# rebuild: 1787454550
 __END__
 diff --git a/cmake/packaging/linux.cmake b/cmake/packaging/linux.cmake
 index 3bff6328..8f493b07 100644
