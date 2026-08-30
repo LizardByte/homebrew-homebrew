@@ -17,7 +17,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.826.1804"
+    tag: "v2026.830.44125"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -39,11 +39,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "f987077624b3fccd5bba198c7579b3455abd14b2dac7b380d129f7419999d632"
-    sha256 arm64_sequoia: "2fc83e34e1c18330cca349aaa89b77c2ddef9aab17d19aa99efb57c8b0868d8b"
-    sha256 arm64_sonoma:  "b5cf7d01a3c1b7296b4a3ff80ac55b0621657c551e326b2ec495eea24895c084"
-    sha256 arm64_linux:   "528a2ac6f36560ea041e291423e58ee7a477feb8d2db660194328f3d5678f73e"
-    sha256 x86_64_linux:  "9f4dd52dacf20a13e56028fbf68ff8e06cefd75eeab6913da72fbc843fa7867f"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_linux:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-docs", "Enable docs build"
@@ -137,8 +137,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.826.1804"
-    ENV["COMMIT"] = "f273ce8f45db0bd6c7810a0f2c77e170f1a40f6e"
+    ENV["BUILD_VERSION"] = "2026.830.44125"
+    ENV["COMMIT"] = "0e0a1f8a8bdc6b713ffda32a1af7cd856b039534"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -478,6 +478,11 @@ class SunshineBeta < Formula
   test do
     # test that the binary runs at all
     system bin/"sunshine", "--version"
+
+    if OS.linux?
+      assert_path_exists lib/"udev/rules.d/60-sunshine.rules"
+      assert_path_exists lib/"modules-load.d/60-sunshine.conf"
+    end
 
     if IS_UPSTREAM_REPO
       artifact_dir = release_homebrew_testpath
