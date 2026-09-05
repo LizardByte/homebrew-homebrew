@@ -39,11 +39,12 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "eaf184ac94b476fab78f074fa939b82324799aa51b9d1560980055a3ab4c3d95"
-    sha256 arm64_sequoia: "d30c8d8b46d2528b8bd63ff7cedaa54abe8bb828e934cf5c578be8244afdaa47"
-    sha256 arm64_sonoma:  "ace7defdaf9bb6df2713602ace57948c0e74d7ab36008b3a08874f5450a98bdb"
-    sha256 arm64_linux:   "1a64c7290c47c27c7ba0d637990de99e1f486396b6234ef4daf8734c99ee10b2"
-    sha256 x86_64_linux:  "8956860fab8b743c7561fd4e9d6e98fd6036e626ffe58dd817df94cff3c46c12"
+    rebuild 1
+    sha256 arm64_tahoe:   "a099a65c8d0d47a6337e10d5f4c0359b7fffa67766c84ec993c67aa63c54fd37"
+    sha256 arm64_sequoia: "ba035b2bf658727c503422d07005d1eb186fedd7a562f218062f82e0a7e0b07a"
+    sha256 arm64_sonoma:  "2815abba9eb191e5d2b8a0095c4a6fb1e8c53b387b75acc995901d6943e3d387"
+    sha256 arm64_linux:   "a0b13580c8a1763926ea09331d74da9b64719ad6f5f7efc905b4717471adf773"
+    sha256 x86_64_linux:  "a5535778f1e3b6b7f967b22f7b6dd446562ccead9291862621dd5cd066238c3d"
   end
 
   option "with-docs", "Enable docs build"
@@ -451,16 +452,16 @@ class SunshineBeta < Formula
     name linux: "app-dev.lizardbyte.app.Sunshine" if OS.linux?
   end
 
-  def post_install
-    if OS.linux?
-      opoo <<~EOS
+  post_install_steps do
+    on_linux do
+      warn <<~EOS
         ATTENTION: To complete installation, you must run the following command:
-        `sudo #{bin}/postinst`
+        `sudo {{bin}}/postinst`
       EOS
     end
 
-    if OS.mac?
-      opoo <<~EOS
+    on_macos do
+      warn <<~EOS
         Gamepads are not currently supported on macOS.
       EOS
     end
