@@ -100,20 +100,24 @@ jobs:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
+          HOMEBREW_GIT_COMMITTER_EMAIL: ${{ secrets.GH_BOT_EMAIL }}
+          HOMEBREW_GIT_COMMITTER_NAME: ${{ vars.GH_BOT_NAME }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: |
           for attempt in 1 2; do
-            brew pr-pull \
+            if brew pr-pull \
               --branch-okay \
-              --committer="${{ vars.GH_BOT_NAME }} <${{ secrets.GH_BOT_EMAIL }}>" \
               --debug \
               --no-cherry-pick \
               --tap="${GITHUB_REPOSITORY}" \
-              "${PULL_REQUEST}" && break
-            if [ "${attempt}" -lt 2 ]; then
-              echo "brew pr-pull failed, retrying in 30 seconds..."
-              sleep 30
+              "${PULL_REQUEST}"; then
+              break
             fi
+            if [ "${attempt}" -eq 2 ]; then
+              exit 1
+            fi
+            echo "brew pr-pull failed, retrying in 30 seconds..."
+            sleep 30
           done
 
       - name: Push commits
