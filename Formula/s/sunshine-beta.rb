@@ -451,16 +451,16 @@ class SunshineBeta < Formula
     name linux: "app-dev.lizardbyte.app.Sunshine" if OS.linux?
   end
 
-  def post_install
-    if OS.linux?
-      opoo <<~EOS
+  post_install_steps do
+    on_linux do
+      warn <<~EOS
         ATTENTION: To complete installation, you must run the following command:
-        `sudo #{bin}/postinst`
+        `sudo {{bin}}/postinst`
       EOS
     end
 
-    if OS.mac?
-      opoo <<~EOS
+    on_macos do
+      warn <<~EOS
         Gamepads are not currently supported on macOS.
       EOS
     end
