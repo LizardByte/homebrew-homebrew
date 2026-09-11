@@ -68,6 +68,7 @@ jobs:
           TAP_PATH="$(brew --repository "${GITHUB_REPOSITORY}")"
           XCODE_CONFIG="${TAP_PATH}/ci_config/xcode_versions.json"
           MACOS_VERSION="${MATRIX_OS#macos-}"
+          MACOS_VERSION="${MACOS_VERSION%-intel}"
 
           XCODE_VERSIONS=$(jq -r \
             --arg formulae "${TESTING_FORMULAE}" \

@@ -225,6 +225,7 @@ jobs:
           # Default to empty arrays
           NEEDS_LINUX=false
           NEEDS_MACOS=false
+          AVAILABLE_MACOS_RUNNERS=("macos-15" "macos-15-intel" "macos-26" "macos-26-intel")
           MACOS_VERSIONS=()
 
           # Check each changed formula
@@ -289,24 +290,17 @@ jobs:
 
                     for version in ${MACOS_VERSION_MATCHES}; do
                       case "${version}" in
-                        ventura)
-                          # macOS 13 Ventura - not commonly available in GitHub Actions
-                          MACOS_VERSIONS+=("macos-13")
-                          ;;
-                        sonoma)
-                          # macOS 14 Sonoma
-                          MACOS_VERSIONS+=("macos-14")
-                          ;;
-                        sequoia)
-                          # macOS 15 Sequoia
-                          MACOS_VERSIONS+=("macos-15")
+                        ventura|sonoma|sequoia)
+                          # macOS requirements are minimum versions; all current runners satisfy these
+                          MACOS_VERSIONS+=("${AVAILABLE_MACOS_RUNNERS[@]}")
                           ;;
                         tahoe)
-                          # macOS 16 Tahoe
-                          MACOS_VERSIONS+=("macos-26")
+                          # macOS 16 Tahoe, on both supported architectures
+                          MACOS_VERSIONS+=("macos-26" "macos-26-intel")
                           ;;
                         *)
                           echo "  -> Unknown macOS version: ${version}, will use all macOS runners"
+                          MACOS_VERSIONS+=("${AVAILABLE_MACOS_RUNNERS[@]}")
                           ;;
                       esac
                     done
@@ -331,10 +325,10 @@ jobs:
 
           # Build the platform matrix
           # macOS version mapping to GitHub Actions runners:
-          # - macos-13 = macOS 13.x Ventura (x86_64)
-          # - macos-14 = macOS 14.x Sonoma (arm64)
           # - macos-15 = macOS 15.x Sequoia (arm64)
-          # - macos-26 = macOS 16.x Tahoe (arm64)
+          # - macos-15-intel = macOS 15.x Sequoia (x86_64)
+          # - macos-26 = macOS 26.x Tahoe (arm64)
+          # - macos-26-intel = macOS 26.x Tahoe (x86_64)
           PLATFORMS="["
           if [ "${NEEDS_LINUX}" == "true" ]; then
             PLATFORMS="${PLATFORMS}\"ubuntu-${UBUNTU_VERSION}\","
@@ -349,7 +343,7 @@ jobs:
               done
             else
               # Otherwise use all available macOS runners
-              PLATFORMS="${PLATFORMS}\"macos-14\",\"macos-15\",\"macos-26\","
+              PLATFORMS="${PLATFORMS}\"macos-15\",\"macos-15-intel\",\"macos-26\",\"macos-26-intel\","
             fi
           fi
 
@@ -358,7 +352,7 @@ jobs:
 
           # If no platforms detected, default to all platforms
           if [ "${PLATFORMS}" == "]" ]; then
-            PLATFORMS="[\"ubuntu-${UBUNTU_VERSION}\",\"macos-14\",\"macos-15\",\"macos-26\"]"
+            PLATFORMS="[\"ubuntu-${UBUNTU_VERSION}\",\"macos-15\",\"macos-15-intel\",\"macos-26\",\"macos-26-intel\"]"
           fi
 
           echo "Platforms to test: ${PLATFORMS}"
