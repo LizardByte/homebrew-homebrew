@@ -528,3 +528,4 @@ class Sunshine < Formula
     end
   end
 end
+# rebuild: 1789285098
