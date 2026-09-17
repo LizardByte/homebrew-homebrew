@@ -20,7 +20,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.914.233613"
+    tag: "v2026.916.165635"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -42,10 +42,10 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "b13758cf95ce5f8cfd5ee390eedf30fc80516e39f8e1c10cf5f12f16e8bd6f60"
-    sha256 arm64_sequoia: "2b33b51a69c46b4b3351544df9386b84c4cda573e0a5b578413d9f36816f7e8b"
-    sha256 arm64_linux:   "57ebd5d38c3a2a47ef6f5be63dee06043402281a53b3256550863140dc8cc0ac"
-    sha256 x86_64_linux:  "eb28328b478685cbe10ec23bcfe78376517eddeafdbab6877f45a4974109c754"
+    sha256 arm64_tahoe:   "bef0502f2e230cdd3a6e2fe3383620ca0dd404f907f4f15139545ada084983d7"
+    sha256 arm64_sequoia: "d44ad010416430d1d9b9b79524f844937808dd79b55d8540340fd3a7fbb390bd"
+    sha256 arm64_linux:   "2d9156059cb3c82862ba50d9ea51be466575cb3d9856245aa9976fee12e545a8"
+    sha256 x86_64_linux:  "b2a5996519e8aae62e411fe1454c8c44320693ff254d32756ec8cbadfd5b77f2"
   end
 
   option "with-docs", "Enable docs build"
@@ -142,8 +142,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.914.233613"
-    ENV["COMMIT"] = "63d35f702ee9e362e43263742981836ec0710384"
+    ENV["BUILD_VERSION"] = "2026.916.165635"
+    ENV["COMMIT"] = "7c8926d7019d99881986fb53fb4bba7d98daa606"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -453,6 +453,26 @@ class SunshineBeta < Formula
       %w[docs src src_assets test_assets].each do |directory|
         test_runtime.install "build/tests/#{directory}"
       end
+      boost_test_fixtures = %w[
+        cmake/compile_definitions/macos.cmake
+        cmake/dependencies/Boost_Sunshine.cmake
+        cmake/macros/common.cmake
+        cmake/prep/options.cmake
+        package-lock.cmake
+        packaging/linux/Arch/PKGBUILD
+        packaging/linux/copr/Sunshine.spec
+        packaging/linux/flatpak/modules/boost.json
+        scripts/linux_build.sh
+      ]
+      if OS.mac?
+        boost_test_fixtures += %w[
+          .github/workflows/ci-macos.yml
+          scripts/macos_build.sh
+        ]
+      end
+      boost_test_fixtures.each do |fixture|
+        (test_runtime/Pathname.new(fixture).dirname).install "build/tests/#{fixture}"
+      end
       test_runtime.install "sunshine.png"
       (test_runtime/"tests/unit").install "tests/unit/test_video.cpp"
 
@@ -529,6 +549,8 @@ class SunshineBeta < Formula
         assert_path_exists coverage_buildpath
         assert_path_exists bin/TEST_BINARY
         assert_path_exists test_runtime/"docs/getting_started.md"
+        assert_path_exists test_runtime/"cmake/dependencies/Boost_Sunshine.cmake"
+        assert_path_exists test_runtime/"scripts/macos_build.sh" if OS.mac?
         assert_path_exists test_runtime/"src/config.cpp"
         assert_path_exists test_runtime/"src_assets/common/assets/web/public/assets/locale/en.json"
         assert_path_exists test_runtime/"test_assets/web/images/logo-sunshine.svg"
