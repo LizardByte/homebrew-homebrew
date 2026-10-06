@@ -20,7 +20,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.1003.221627"
+    tag: "v2026.1006.15912"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -42,10 +42,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "c2e6f59d2adf0244d771b8fc461daf1b2b7b4dd3599f7a3ea0eaef8a6cc23a76"
-    sha256 arm64_sequoia: "f98ab7d0044a7cb798292dc6195bdc8424a94fb657f9a28e89e0e7fedc216411"
-    sha256 arm64_linux:   "4f90e29ff9413947a639a85bf27b95a3e703eb3fb42dc9ab38358877f9234d31"
-    sha256 x86_64_linux:  "39a9fd7141267391474e0b54d9c2947c317b3e93c9041df62257530915a1fb15"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_linux:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-docs", "Enable docs build"
@@ -142,8 +143,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1003.221627"
-    ENV["COMMIT"] = "5e13eb67993330a678bcb5aafb6bbfaaa69dd185"
+    ENV["BUILD_VERSION"] = "2026.1006.15912"
+    ENV["COMMIT"] = "522ee73c3caba74bef6ea7a7658e907034567f2b"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -172,7 +173,7 @@ class SunshineBeta < Formula
       -DCMAKE_INSTALL_PREFIX=#{prefix}
       -DGLAD_SKIP_PIP_INSTALL=ON
       -DHOMEBREW_ALLOW_FETCHCONTENT=ON
-      -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl")}
+      -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl@3")}
       -DSUNSHINE_ASSETS_DIR=sunshine/assets
       -DSUNSHINE_BUILD_HOMEBREW=ON
       -DSUNSHINE_PUBLISHER_NAME='LizardByte'
