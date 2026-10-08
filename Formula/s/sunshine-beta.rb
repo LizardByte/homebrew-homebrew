@@ -20,7 +20,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.1007.173111"
+    tag: "v2026.1008.43744"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -42,10 +42,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "b5794224e9be7a453bcda1131d74b6681db91a3e4698f2e6f2922461769cb462"
-    sha256 arm64_sequoia: "d8e5fc4d2005097eb3eba1d437363b88d1ea05c0fd6e584b38783c75cd951f08"
-    sha256 arm64_linux:   "458993b457e80f9e34d64fec4762c91572ea2b5db3cb5f42dd41e42e262793a4"
-    sha256 x86_64_linux:  "8155dbba76b42402d864d44cbb6818727c03fc4315ed229fec980b0b821264ed"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_linux:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-docs", "Enable docs build"
@@ -142,8 +143,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1007.173111"
-    ENV["COMMIT"] = "0594f62d4cc6179aa055f0363043adbc8849b62b"
+    ENV["BUILD_VERSION"] = "2026.1008.43744"
+    ENV["COMMIT"] = "d6453a3ab2fbe7e1649d77105a42bd32182461c7"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -462,7 +463,9 @@ class SunshineBeta < Formula
         packaging/linux/Arch/PKGBUILD
         packaging/linux/copr/Sunshine.spec
         packaging/linux/flatpak/modules/boost.json
+        packaging/linux/flatpak/scripts/additional-install.sh
         scripts/linux_build.sh
+        tests/scripts/test_additional_install.sh
       ]
       if OS.mac?
         boost_test_fixtures += %w[
@@ -556,6 +559,10 @@ class SunshineBeta < Formula
         assert_path_exists test_runtime/"test_assets/web/images/logo-sunshine.svg"
         assert_path_exists test_runtime/"tests/unit/test_video.cpp"
         if OS.linux?
+          assert_path_exists test_runtime/"tests/scripts/test_additional_install.sh"
+          assert_path_exists test_runtime/"packaging/linux/flatpak/scripts/additional-install.sh"
+          assert_path_exists test_runtime/"src_assets/linux/misc/60-sunshine.conf"
+          assert_path_exists test_runtime/"src_assets/linux/misc/60-sunshine.rules"
           assert_path_exists test_runtime/"coverage/src/config.cpp"
           assert_path_exists test_runtime/GCOV_PREFIX_STRIP_FILE
           source_notes = test_runtime.glob("coverage/build/tests/CMakeFiles/#{TEST_BINARY}.dir/__/src/**/*.gcno")
