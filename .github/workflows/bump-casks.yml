@@ -1,0 +1,19 @@
+name: Bump Casks
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  repository_dispatch:
+    types: [bump-casks]
+  workflow_dispatch:
+
+jobs:
+  bump:
+    runs-on: macos-latest
+    steps:
+      - uses: Homebrew/actions/bump-packages@master
+        with:
+          token: ${{ secrets.GH_BOT_TOKEN }}
+          tap: LizardByte/homebrew-homebrew
+          casks: true
+          formulae: false
