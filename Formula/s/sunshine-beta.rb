@@ -20,7 +20,7 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.1008.155609"
+    tag: "v2026.1010.141104"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -42,10 +42,10 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "b5a54d04d7512cebc1654727caab9bf17d4269c18257a7f0f18919598727a7df"
-    sha256 arm64_sequoia: "fbfa57422d9cae75155bfdec664a6f41cdcefe6c2e63a42d965149017114cef6"
-    sha256 arm64_linux:   "341fc7e044d53625ab7efbe7dd18da75eb1d925114afd0e0f47a45dc39969601"
-    sha256 x86_64_linux:  "0f1943136c9ae307961a856dd13ef1b73ecf79639384f365e56a72503c6a2ba6"
+    sha256 arm64_tahoe:   "a7ae953332fa35350eb04825285660a9ee2b28dd9eaeba29d52b71ab3d0660e6"
+    sha256 arm64_sequoia: "9420c58c2e8209d3e22b60a6d5fabdd1dddd78becac2347cbcab411d3eb4355d"
+    sha256 arm64_linux:   "9d858b8bdce49ac7cf77c161e8fe35044a185df600acbab00a6e6dda9f6c0cd6"
+    sha256 x86_64_linux:  "a9a883ce22118ca3dfa9c62f8a0182579a659deed892751d448fe7cadf3e1fe7"
   end
 
   option "with-docs", "Enable docs build"
@@ -64,7 +64,7 @@ class SunshineBeta < Formula
   depends_on "curl"
   depends_on "icu4c@78"
   depends_on "miniupnpc"
-  depends_on "openssl@3"
+  depends_on "openssl@4"
   depends_on "opus"
   depends_on "qtbase"
   depends_on "qtsvg"
@@ -142,8 +142,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1008.155609"
-    ENV["COMMIT"] = "1732b8714c48116a5602b0ff86b523ec947d3cc0"
+    ENV["BUILD_VERSION"] = "2026.1010.141104"
+    ENV["COMMIT"] = "cd370564d532e1c60729adeca59cb3a783abe717"
 
     setup_linux_gcc_environment if OS.linux?
 
@@ -166,19 +166,27 @@ class SunshineBeta < Formula
     ENV["CXX"] = "#{gcc_path.opt_bin}/g++-#{GCC_VERSION}"
   end
 
+  ## @brief Generate CMake arguments with Homebrew dependency and Linux runtime paths.
+  ## @return CMake command-line arguments.
   def base_cmake_args
     args = %W[
       -DBUILD_WERROR=ON
       -DCMAKE_INSTALL_PREFIX=#{prefix}
       -DGLAD_SKIP_PIP_INSTALL=ON
       -DHOMEBREW_ALLOW_FETCHCONTENT=ON
-      -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl@3")}
+      -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl@4")}
       -DSUNSHINE_ASSETS_DIR=sunshine/assets
       -DSUNSHINE_BUILD_HOMEBREW=ON
       -DSUNSHINE_PUBLISHER_NAME='LizardByte'
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+    if OS.linux?
+      # GCC treats Homebrew's lib directory as implicit, so CMake omits its automatic rpath.
+      # Keep curl's indirect dependencies ahead of incompatible system libraries when linking and running.
+      args << "-DCMAKE_BUILD_RPATH=#{HOMEBREW_PREFIX}/lib"
+      args << "-DCMAKE_INSTALL_RPATH=#{HOMEBREW_PREFIX}/lib"
+    end
     args << "-DSUNSHINE_EXECUTABLE_PATH=#{opt_bin}/sunshine" if OS.linux?
     # Point cmake at the venv Python that has jinja2 installed (set up in setup_build_environment)
     args << "-DPython_EXECUTABLE=#{@glad_python}" if @glad_python
