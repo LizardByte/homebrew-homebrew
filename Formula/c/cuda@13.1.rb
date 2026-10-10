@@ -29,4 +29,8 @@ class CudaAT131 < Formula
     sha256 cellar: :any, arm64_linux:  "e4810b4ed3b724056898248f3a276d4fd90ab08d45d7232019d85fefc72b867f"
     sha256 cellar: :any, x86_64_linux: "3d9f716aaf64a96a8b68ca53bd6bf860aad7f05b9571e678406e4a88ec29a378"
   end
+
+  test do
+    test_cuda_toolkit
+  end
 end

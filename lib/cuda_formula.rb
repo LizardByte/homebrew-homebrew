@@ -155,7 +155,7 @@ module CudaFormula
     EOS
   end
 
-  def test
+  def test_cuda_toolkit
     cuda_nvcc = libexec/"homebrew/bin/nvcc"
 
     # Test that nvcc is available and can report its version
