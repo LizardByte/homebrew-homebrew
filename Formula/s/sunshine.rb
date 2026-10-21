@@ -20,7 +20,8 @@ class Sunshine < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.914.233613"
+    tag:      "v2026.914.233613",
+    revision: "63d35f702ee9e362e43263742981836ec0710384"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -38,11 +39,11 @@ class Sunshine < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 3
-    sha256 arm64_tahoe:   "e4fae493eb9cbf2b57c78ffdd623c19bc1e189d2e58007b12faab119d758df4d"
-    sha256 arm64_sequoia: "d26260381e7eed864bae6723e6218526fb2d329b13c3f270ccbb8f5e03cc698f"
-    sha256 arm64_linux:   "6ac2ba20838dd18283ebe1593e193a81b024551e05af7078b61d081f092c07c5"
-    sha256 x86_64_linux:  "ce4e8af63e93f0b6164188abc96b7de2b6c9bf8f555629c8b97255c8b6a59c27"
+    rebuild 4
+    sha256 arm64_tahoe:   "fa8da33c53306d8bc8144a877a30b5a98cdb5b98f69d3eb783a0d43a56eaa666"
+    sha256 arm64_sequoia: "df0c0ed553c10eeb26803ed0bad7dad5b47ded1fcad3dc480f42749c71f9cc4c"
+    sha256 arm64_linux:   "d7eb853538ce101c1c75d8e1e4bccfa3427be5db7c369b2f6448d2c13188b3bd"
+    sha256 x86_64_linux:  "692247a0150109ac2420743ef302fec1f93ba6a06209a399e9f3f829aac67462"
   end
 
   option "with-docs", "Enable docs build"
@@ -61,7 +62,7 @@ class Sunshine < Formula
   depends_on "curl"
   depends_on "icu4c@78"
   depends_on "miniupnpc"
-  depends_on "openssl@3"
+  depends_on "openssl@4"
   depends_on "opus"
   depends_on "qtbase"
   depends_on "qtsvg"
@@ -169,7 +170,7 @@ class Sunshine < Formula
       -DCMAKE_INSTALL_PREFIX=#{prefix}
       -DGLAD_SKIP_PIP_INSTALL=ON
       -DHOMEBREW_ALLOW_FETCHCONTENT=ON
-      -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl")}
+      -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl@4")}
       -DSUNSHINE_ASSETS_DIR=sunshine/assets
       -DSUNSHINE_BUILD_HOMEBREW=ON
       -DSUNSHINE_PUBLISHER_NAME='LizardByte'
