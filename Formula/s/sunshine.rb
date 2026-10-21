@@ -20,7 +20,8 @@ class Sunshine < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag: "v2026.914.233613"
+    tag:      "v2026.914.233613",
+    revision: "63d35f702ee9e362e43263742981836ec0710384"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
