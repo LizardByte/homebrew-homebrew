@@ -48,11 +48,11 @@ class Sunshine < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 4
-    sha256 arm64_tahoe:   "fa8da33c53306d8bc8144a877a30b5a98cdb5b98f69d3eb783a0d43a56eaa666"
-    sha256 arm64_sequoia: "df0c0ed553c10eeb26803ed0bad7dad5b47ded1fcad3dc480f42749c71f9cc4c"
-    sha256 arm64_linux:   "d7eb853538ce101c1c75d8e1e4bccfa3427be5db7c369b2f6448d2c13188b3bd"
-    sha256 x86_64_linux:  "692247a0150109ac2420743ef302fec1f93ba6a06209a399e9f3f829aac67462"
+    rebuild 5
+    sha256 arm64_tahoe:   "1a4a6efa0c031a7b3251eed5587f13392c5336396319382e793dce47be26b2ea"
+    sha256 arm64_sequoia: "9be5a597742003406efc745c3417252f50bba7736cb669d15b94b4b89b70158c"
+    sha256 arm64_linux:   "1c3f30d4d746110a1d0bd8bb1adb6ab10f36054880247c5e124f66c0a5901083"
+    sha256 x86_64_linux:  "37b4c8c19a059481dd258c256783553c78bcd8841b48b8f4f2660f70e7c083b0"
   end
 
   option "with-docs", "Enable docs build"
