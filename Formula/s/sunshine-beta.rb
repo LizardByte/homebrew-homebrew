@@ -19,11 +19,20 @@ class SunshineBeta < Formula
 
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
-  url "https://github.com/LizardByte/Sunshine.git",
-    tag:      "v2026.1018.5342",
-    revision: "3d6e1d6008bd4a24906283ab25fcd0becc0a1c07"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
+
+  stable do
+    url "https://github.com/LizardByte/Sunshine.git",
+      tag:      "v2026.1018.5342",
+      revision: "3d6e1d6008bd4a24906283ab25fcd0becc0a1c07"
+
+    # Backport OpenSSL 4.1 support to the pinned release.
+    patch do
+      url "https://github.com/LizardByte/Sunshine/commit/dac66dfdd200c5f1bb4b31b4e34227690ca8c565.patch?full_index=1"
+      sha256 "90f8cc94ef11acbbf07f2063a8363160318c480e86c623b9c23e33c44c1c14d5"
+    end
+  end
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
   livecheck do
@@ -64,7 +73,7 @@ class SunshineBeta < Formula
   depends_on "pkgconf" => :build
   depends_on "boost"
   depends_on "curl"
-  depends_on "icu4c@78"
+  depends_on "icu4c@79"
   depends_on "miniupnpc"
   depends_on "openssl@4"
   depends_on "opus"

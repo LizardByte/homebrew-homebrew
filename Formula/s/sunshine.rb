@@ -19,11 +19,20 @@ class Sunshine < Formula
 
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
-  url "https://github.com/LizardByte/Sunshine.git",
-    tag:      "v2026.914.233613",
-    revision: "63d35f702ee9e362e43263742981836ec0710384"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
+
+  stable do
+    url "https://github.com/LizardByte/Sunshine.git",
+      tag:      "v2026.914.233613",
+      revision: "63d35f702ee9e362e43263742981836ec0710384"
+
+    # Backport OpenSSL 4.1 support to the pinned release.
+    patch do
+      url "https://github.com/LizardByte/Sunshine/commit/dac66dfdd200c5f1bb4b31b4e34227690ca8c565.patch?full_index=1"
+      sha256 "90f8cc94ef11acbbf07f2063a8363160318c480e86c623b9c23e33c44c1c14d5"
+    end
+  end
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
   livecheck do
@@ -60,7 +69,7 @@ class Sunshine < Formula
   depends_on "pkgconf" => :build
   depends_on "boost"
   depends_on "curl"
-  depends_on "icu4c@78"
+  depends_on "icu4c@79"
   depends_on "miniupnpc"
   depends_on "openssl@4"
   depends_on "opus"
@@ -177,6 +186,12 @@ class Sunshine < Formula
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+    if OS.linux?
+      # GCC treats Homebrew's lib directory as implicit, so CMake omits its automatic rpath.
+      # Keep curl's indirect dependencies ahead of incompatible system libraries when linking and running.
+      args << "-DCMAKE_BUILD_RPATH=#{HOMEBREW_PREFIX}/lib"
+      args << "-DCMAKE_INSTALL_RPATH=#{HOMEBREW_PREFIX}/lib"
+    end
     args << "-DSUNSHINE_EXECUTABLE_PATH=#{opt_bin}/sunshine" if OS.linux?
     # Point cmake at the venv Python that has jinja2 installed (set up in setup_build_environment)
     args << "-DPython_EXECUTABLE=#{@glad_python}" if @glad_python
