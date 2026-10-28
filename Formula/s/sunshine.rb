@@ -19,11 +19,20 @@ class Sunshine < Formula
 
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
-  url "https://github.com/LizardByte/Sunshine.git",
-    tag:      "v2026.914.233613",
-    revision: "63d35f702ee9e362e43263742981836ec0710384"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
+
+  stable do
+    url "https://github.com/LizardByte/Sunshine.git",
+      tag:      "v2026.914.233613",
+      revision: "63d35f702ee9e362e43263742981836ec0710384"
+
+    # Backport OpenSSL 4.1 support to the pinned release.
+    patch do
+      url "https://github.com/LizardByte/Sunshine/commit/dac66dfdd200c5f1bb4b31b4e34227690ca8c565.patch?full_index=1"
+      sha256 "90f8cc94ef11acbbf07f2063a8363160318c480e86c623b9c23e33c44c1c14d5"
+    end
+  end
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
   livecheck do
@@ -39,11 +48,11 @@ class Sunshine < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 4
-    sha256 arm64_tahoe:   "fa8da33c53306d8bc8144a877a30b5a98cdb5b98f69d3eb783a0d43a56eaa666"
-    sha256 arm64_sequoia: "df0c0ed553c10eeb26803ed0bad7dad5b47ded1fcad3dc480f42749c71f9cc4c"
-    sha256 arm64_linux:   "d7eb853538ce101c1c75d8e1e4bccfa3427be5db7c369b2f6448d2c13188b3bd"
-    sha256 x86_64_linux:  "692247a0150109ac2420743ef302fec1f93ba6a06209a399e9f3f829aac67462"
+    rebuild 5
+    sha256 arm64_tahoe:   "1a4a6efa0c031a7b3251eed5587f13392c5336396319382e793dce47be26b2ea"
+    sha256 arm64_sequoia: "9be5a597742003406efc745c3417252f50bba7736cb669d15b94b4b89b70158c"
+    sha256 arm64_linux:   "1c3f30d4d746110a1d0bd8bb1adb6ab10f36054880247c5e124f66c0a5901083"
+    sha256 x86_64_linux:  "37b4c8c19a059481dd258c256783553c78bcd8841b48b8f4f2660f70e7c083b0"
   end
 
   option "with-docs", "Enable docs build"
@@ -60,7 +69,7 @@ class Sunshine < Formula
   depends_on "pkgconf" => :build
   depends_on "boost"
   depends_on "curl"
-  depends_on "icu4c@78"
+  depends_on "icu4c@79"
   depends_on "miniupnpc"
   depends_on "openssl@4"
   depends_on "opus"
@@ -177,6 +186,12 @@ class Sunshine < Formula
       -DSUNSHINE_PUBLISHER_WEBSITE='https://app.lizardbyte.dev'
       -DSUNSHINE_PUBLISHER_ISSUE_URL='https://app.lizardbyte.dev/support'
     ]
+    if OS.linux?
+      # GCC treats Homebrew's lib directory as implicit, so CMake omits its automatic rpath.
+      # Keep curl's indirect dependencies ahead of incompatible system libraries when linking and running.
+      args << "-DCMAKE_BUILD_RPATH=#{HOMEBREW_PREFIX}/lib"
+      args << "-DCMAKE_INSTALL_RPATH=#{HOMEBREW_PREFIX}/lib"
+    end
     args << "-DSUNSHINE_EXECUTABLE_PATH=#{opt_bin}/sunshine" if OS.linux?
     # Point cmake at the venv Python that has jinja2 installed (set up in setup_build_environment)
     args << "-DPython_EXECUTABLE=#{@glad_python}" if @glad_python

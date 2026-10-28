@@ -19,11 +19,20 @@ class SunshineBeta < Formula
 
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
-  url "https://github.com/LizardByte/Sunshine.git",
-    tag:      "v2026.1018.5342",
-    revision: "3d6e1d6008bd4a24906283ab25fcd0becc0a1c07"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
+
+  stable do
+    url "https://github.com/LizardByte/Sunshine.git",
+      tag:      "v2026.1018.5342",
+      revision: "3d6e1d6008bd4a24906283ab25fcd0becc0a1c07"
+
+    # Backport OpenSSL 4.1 support to the pinned release.
+    patch do
+      url "https://github.com/LizardByte/Sunshine/commit/dac66dfdd200c5f1bb4b31b4e34227690ca8c565.patch?full_index=1"
+      sha256 "90f8cc94ef11acbbf07f2063a8363160318c480e86c623b9c23e33c44c1c14d5"
+    end
+  end
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
   livecheck do
@@ -43,11 +52,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 2
-    sha256 arm64_tahoe:   "fc6782a8510804b1ec9e880eb7fb161228de151d3548ace625eab63ef7db2cda"
-    sha256 arm64_sequoia: "e8f9636e84a21c3cbf1771f342b42d800049a695eb81d1f013ce456c1b6b54b5"
-    sha256 arm64_linux:   "6d812200e88e2e5ee8fd7b574aaab968c5977268d6e5b5d492eb5e310d03be56"
-    sha256 x86_64_linux:  "e069b5773c65ed8f5b63b6322eb7f911e83bdfd2f39b7dfec1ba99d29a08b6cf"
+    rebuild 3
+    sha256 arm64_tahoe:   "f70e3158e2956f6f98d34b7b34306f7d14e7a4a3e17d9fb6fd7a64b54ae215f3"
+    sha256 arm64_sequoia: "fa1386888d45c2acb5636c8b74002ccf14fd896048f71fd41f721ab54193e1ba"
+    sha256 arm64_linux:   "f216500225132068f344b69618261e2c93ecc761a970e7b70d6a1910fbb25667"
+    sha256 x86_64_linux:  "0de68ba8ebde7e65fe3d149d33b8cf2d7afec8ad3254be43d8c7fc5f861d2ee3"
   end
 
   option "with-docs", "Enable docs build"
@@ -64,7 +73,7 @@ class SunshineBeta < Formula
   depends_on "pkgconf" => :build
   depends_on "boost"
   depends_on "curl"
-  depends_on "icu4c@78"
+  depends_on "icu4c@79"
   depends_on "miniupnpc"
   depends_on "openssl@4"
   depends_on "opus"
