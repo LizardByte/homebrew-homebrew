@@ -20,8 +20,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://app.lizardbyte.dev/Sunshine"
   url "https://github.com/LizardByte/Sunshine.git",
-    tag:      "v2026.1107.140602",
-    revision: "424b37e9c9b586d2afae26630090b84c89d69905"
+    tag:      "v2026.1107.185223",
+    revision: "f787dcf32874d33224871f466d8fc9a9ece431c0"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/LizardByte/Sunshine.git", branch: "master"
 
@@ -43,10 +43,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "e5315517c0b89fd35839029acf38b439aa42bba717d7e4e3cfa06a24773ce8cc"
-    sha256 arm64_sequoia: "8afa738705af4c61043fb9aa061f5a2d534c0a7251e6041508d3076d71edaea7"
-    sha256 arm64_linux:   "71a974f3be8f8b138eea01ffceb82b0b8d4032c06b5e37ceed5a27033827f7d8"
-    sha256 x86_64_linux:  "bfb1d6dc568c1d154fff11438e1ce86054e278536d5504a67f13d34a71f45d8f"
+    sha256 arm64_tahoe:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sequoia: "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_sonoma:  "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 arm64_linux:   "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 x86_64_linux:  "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   option "with-docs", "Enable docs build"
@@ -143,8 +144,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1107.140602"
-    ENV["COMMIT"] = "424b37e9c9b586d2afae26630090b84c89d69905"
+    ENV["BUILD_VERSION"] = "2026.1107.185223"
+    ENV["COMMIT"] = "f787dcf32874d33224871f466d8fc9a9ece431c0"
 
     setup_linux_gcc_environment if OS.linux?
 
