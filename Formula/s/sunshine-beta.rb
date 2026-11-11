@@ -15,15 +15,15 @@ class SunshineBeta < Formula
   LLVM_PROFILE_FILE_ENV = "LLVM_PROFILE_FILE".freeze
   TEST_BINARY = "test_sunshine".freeze
   TEST_RESULTS_XML = "tests/test_results.xml".freeze
-  IS_UPSTREAM_REPO = ENV.fetch("GITHUB_REPOSITORY", "") == "LizardByte/Sunshine"
+  IS_UPSTREAM_REPO = ENV.fetch("GITHUB_REPOSITORY", "") == "SunshineStream/Sunshine"
 
   desc "Self-hosted game stream host for Moonlight"
-  homepage "https://app.lizardbyte.dev/Sunshine"
-  url "https://github.com/LizardByte/Sunshine.git",
-    tag:      "v2026.1107.185223",
-    revision: "f787dcf32874d33224871f466d8fc9a9ece431c0"
+  homepage "https://sunshine.lizardbyte.dev"
+  url "https://github.com/SunshineStream/Sunshine.git",
+    tag:      "v2026.1110.222616",
+    revision: "357bd98cb1e203dbacbd831dbc6ddfac76d22ac0"
   license all_of: ["GPL-3.0-only"]
-  head "https://github.com/LizardByte/Sunshine.git", branch: "master"
+  head "https://github.com/SunshineStream/Sunshine.git", branch: "master"
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
   livecheck do
@@ -43,10 +43,10 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "8b6c5151bf87db332b8edffb401f0a8732f96283b3601e1afdda172f665dad34"
-    sha256 arm64_sequoia: "85a51718082aa3ba563195ee23ebdd839ebf0fbc353fd058f6eab9d9620d10a2"
-    sha256 arm64_linux:   "1b242c098a8783824208f860f23b4ca549e70489f0a22450c80dba1468b88fca"
-    sha256 x86_64_linux:  "fa5fdd566f88979bcad3b1f0aa17a83334b3e6ba15216326ce99818fe3526c51"
+    sha256 arm64_tahoe:   "2b45a00423a596818f9c98f43ac935858a36f8ff90e4bca58d1002661d96099c"
+    sha256 arm64_sequoia: "a3478fcc0d36ba21099e57a1b49a579401c20b2e2e0c0c7bfc740e3cfa23fd37"
+    sha256 arm64_linux:   "cd1c84f1eb84537f0d89d20b9389e3c3fa0faba5e384e48b5d5013f329f5ac4a"
+    sha256 x86_64_linux:  "37c82a1c68edde5f64ed8f19b6d2115747235022fdcac309773903bc71fe7d1e"
   end
 
   option "with-docs", "Enable docs build"
@@ -143,8 +143,8 @@ class SunshineBeta < Formula
 
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1107.185223"
-    ENV["COMMIT"] = "f787dcf32874d33224871f466d8fc9a9ece431c0"
+    ENV["BUILD_VERSION"] = "2026.1110.222616"
+    ENV["COMMIT"] = "357bd98cb1e203dbacbd831dbc6ddfac76d22ac0"
 
     setup_linux_gcc_environment if OS.linux?
 
