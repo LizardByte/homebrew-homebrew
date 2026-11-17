@@ -32,6 +32,12 @@ class Sunshine < Formula
       url "https://github.com/LizardByte/Sunshine/commit/dac66dfdd200c5f1bb4b31b4e34227690ca8c565.patch?full_index=1"
       sha256 "90f8cc94ef11acbbf07f2063a8363160318c480e86c623b9c23e33c44c1c14d5"
     end
+
+    # Match the FetchContent version and checksum in the pinned Sunshine release.
+    resource "boost-source" do
+      url "https://github.com/boostorg/boost/releases/download/boost-1.89.0/boost-1.89.0-cmake.tar.xz"
+      sha256 "67acec02d0d118b5de9eb441f5fb707b3a1cdd884be00ca24b9a73c995511f74"
+    end
   end
 
   # https://docs.brew.sh/Brew-Livecheck#githublatest-strategy-block
@@ -419,6 +425,18 @@ class Sunshine < Formula
     end
 
     add_cuda_args(args)
+
+    if build.stable?
+      boost_source = buildpath/"boost-source"
+      resource("boost-source").stage boost_source
+      # Backport the Boost.Locale source group fix for CMake 4.5: https://github.com/boostorg/locale/pull/273
+      locale_cmake = boost_source/"libs/locale/CMakeLists.txt"
+      inreplace locale_cmake, 'list(FILTER sources_inc EXCLUDE REGEX "^src/")', <<~CMAKE.chomp
+        list(FILTER sources_inc EXCLUDE REGEX "^src/")
+        list(REMOVE_ITEM sources_inc "${CMAKE_CURRENT_SOURCE_DIR}/include/boost/locale.hpp")
+      CMAKE
+      args << "-DFETCHCONTENT_SOURCE_DIR_BOOST=#{boost_source}"
+    end
 
     system "cmake", "-S", ".", "-B", "build", "-G", "Unix Makefiles",
             *standard_args,
