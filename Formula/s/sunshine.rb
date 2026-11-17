@@ -174,7 +174,7 @@ class Sunshine < Formula
     # to prevent cmake from trying to install Python dependencies again.
     # Follows https://docs.brew.sh/Formula-Cookbook#python-dependencies
     venv = virtualenv_create(buildpath/"venv", "python3")
-    venv.pip_install resources
+    venv.pip_install [resource("markupsafe"), resource("jinja2")]
     @glad_python = (buildpath/"venv/bin/python3").to_s
   end
 
