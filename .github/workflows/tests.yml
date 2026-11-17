@@ -122,6 +122,15 @@ jobs:
             echo "Fixed ownership and permissions for ${BUNDLE_DIR}"
           fi
 
+      # test-bot creates required prefix directories during cleanup. On Intel runners, /usr/local is root-owned.
+      - name: Prepare Homebrew libexec on Intel macOS
+        if: runner.os == 'macOS' && runner.arch == 'X64'
+        run: |
+          libexec_path="$(brew --prefix)/libexec"
+          if [ ! -w "${libexec_path}" ]; then
+            sudo install -d -m 0755 -o "$(id -un)" -g "$(id -gn)" "${libexec_path}"
+          fi
+
       - name: Brew cleanup before
         run: brew test-bot --fail-fast --only-cleanup-before
 
