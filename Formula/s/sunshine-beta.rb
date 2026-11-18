@@ -20,8 +20,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://sunshine.lizardbyte.dev"
   url "https://github.com/SunshineStream/Sunshine.git",
-    tag:      "v2026.1117.42813",
-    revision: "0875ca503a0156ddf9f25167d99612f47db8a778"
+    tag:      "v2026.1118.30014",
+    revision: "37ee7d549391938ab5dc468783fc6dadc23dbc7e"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/SunshineStream/Sunshine.git", branch: "master"
 
@@ -43,11 +43,6 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    rebuild 1
-    sha256 arm64_tahoe:   "d209df47dbd7cea54a4595889b9d1edc1457eb8aa637c0528595b17f190124b5"
-    sha256 arm64_sequoia: "07d4d847ee368e7c1c3f07ec3a2a88d13d38aac97913066b50d27d2670161ede"
-    sha256 arm64_linux:   "310f09b48c012e436745a8ec827e7f18c4259a9d575f807d4e364e9dcda00c82"
-    sha256 x86_64_linux:  "a549595175f90d3ffc39a95f54068713cc2e0c01a27056248eb22ea686441014"
   end
 
   option "with-docs", "Enable docs build"
@@ -145,8 +140,8 @@ class SunshineBeta < Formula
   ## @brief Configure build metadata, the Linux compiler, and the glad Python environment.
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1117.42813"
-    ENV["COMMIT"] = "0875ca503a0156ddf9f25167d99612f47db8a778"
+    ENV["BUILD_VERSION"] = "2026.1118.30014"
+    ENV["COMMIT"] = "37ee7d549391938ab5dc468783fc6dadc23dbc7e"
 
     if OS.linux?
       # Use GCC because gcov from llvm cannot handle our paths
@@ -163,7 +158,7 @@ class SunshineBeta < Formula
     # to prevent cmake from trying to install Python dependencies again.
     # Follows https://docs.brew.sh/Formula-Cookbook#python-dependencies
     venv = virtualenv_create(buildpath/"venv", "python3")
-    venv.pip_install resources
+    venv.pip_install [resource("markupsafe"), resource("jinja2")]
     @glad_python = (buildpath/"venv/bin/python3").to_s
   end
 
