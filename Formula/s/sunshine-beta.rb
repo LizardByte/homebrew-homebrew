@@ -20,8 +20,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://sunshine.lizardbyte.dev"
   url "https://github.com/SunshineStream/Sunshine.git",
-    tag:      "v2026.1120.223208",
-    revision: "6b176045ccf63e393d6d5f86be4938e0bc3c2f44"
+    tag:      "v2026.1121.135813",
+    revision: "920f627084396f36c6814fbc3976ec79a4665580"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/SunshineStream/Sunshine.git", branch: "master"
 
@@ -43,10 +43,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    sha256 arm64_tahoe:   "759d1c70f9d2a98b704a994d64875eb3c7d67289d79b1d792c2e294b2cf9758f"
-    sha256 arm64_sequoia: "9d6a87d009d5192791450fad291994c133e131eca1360d12b68e5fdae0ce6f5b"
-    sha256 arm64_linux:   "ed8295a1c98f9cd18853c184bc5dba6cc6f15969cda1445387b10401bcb0f45a"
-    sha256 x86_64_linux:  "970d8db2265aa8b1e3b3628ae15b792ca88a4fb0d28739c74b30ce846fe578b8"
+    manifest_sha256 "63d57b5fa0126832130f704118a9a9826ae88e6b3653a54c228038549f83077e"
+    sha256 arm64_tahoe:   "8d01bb8fd892294a887fb54c10148e9ef199de43b7f0ce1656ac5fd9f64c6ac2"
+    sha256 arm64_sequoia: "5ebec294b34c0abe8b6c5bc2b2d20ab82aaaa0f45a4fc6de4c00aba315bf5a1d"
+    sha256 arm64_linux:   "f926623fd915551eaf457017bb711130cdfb895aee87d705c425fe196e7339a5"
+    sha256 x86_64_linux:  "b01e36dadcc4fa1338a5e6273c73e17df2c20e578c421e4632d281bd25558f2a"
   end
 
   option "with-docs", "Enable docs build"
@@ -144,8 +145,8 @@ class SunshineBeta < Formula
   ## @brief Configure build metadata, the Linux compiler, and the glad Python environment.
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1120.223208"
-    ENV["COMMIT"] = "6b176045ccf63e393d6d5f86be4938e0bc3c2f44"
+    ENV["BUILD_VERSION"] = "2026.1121.135813"
+    ENV["COMMIT"] = "920f627084396f36c6814fbc3976ec79a4665580"
 
     if OS.linux?
       # Use GCC because gcov from llvm cannot handle our paths
