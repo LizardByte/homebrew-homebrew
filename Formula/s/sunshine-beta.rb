@@ -20,8 +20,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://sunshine.lizardbyte.dev"
   url "https://github.com/SunshineStream/Sunshine.git",
-    tag:      "v2026.1121.212520",
-    revision: "a0d3de9ba0a7849af1fb71724fedf64c05498c44"
+    tag:      "v2026.1121.231041",
+    revision: "575456e02900015e90322ab30864da86d0a09b85"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/SunshineStream/Sunshine.git", branch: "master"
 
@@ -43,11 +43,6 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    manifest_sha256 "657b9f96dfc37e2e2e66631384ec304d6029b0134a78e0b44aca6bbfb6478ca9"
-    sha256 arm64_tahoe:   "dca5aa994c1d5b2b9951399932e71cedcd2a4f3afd2c5fce8626b5f2422666af"
-    sha256 arm64_sequoia: "432f69505c0d69a3d26664a4aa20a3ca453401c441ae28b5848fe39300955b50"
-    sha256 arm64_linux:   "77e3acc9a5d580ca08af5beffd35d8f51156db62beb416c14ecfd69cf6ea3e43"
-    sha256 x86_64_linux:  "6e5d89b6fdb817bb4ff8567f1d47d9bfacf3b2616740b67f701e115731a5364d"
   end
 
   option "with-docs", "Enable docs build"
@@ -145,8 +140,8 @@ class SunshineBeta < Formula
   ## @brief Configure build metadata, the Linux compiler, and the glad Python environment.
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1121.212520"
-    ENV["COMMIT"] = "a0d3de9ba0a7849af1fb71724fedf64c05498c44"
+    ENV["BUILD_VERSION"] = "2026.1121.231041"
+    ENV["COMMIT"] = "575456e02900015e90322ab30864da86d0a09b85"
 
     if OS.linux?
       # Use GCC because gcov from llvm cannot handle our paths
