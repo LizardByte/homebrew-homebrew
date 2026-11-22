@@ -20,8 +20,8 @@ class SunshineBeta < Formula
   desc "Self-hosted game stream host for Moonlight"
   homepage "https://sunshine.lizardbyte.dev"
   url "https://github.com/SunshineStream/Sunshine.git",
-    tag:      "v2026.1121.231041",
-    revision: "575456e02900015e90322ab30864da86d0a09b85"
+    tag:      "v2026.1122.155624",
+    revision: "82fe0f063e98fbce69b3274766b081128fa40ee9"
   license all_of: ["GPL-3.0-only"]
   head "https://github.com/SunshineStream/Sunshine.git", branch: "master"
 
@@ -43,11 +43,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
-    manifest_sha256 "501058b6c8b3c47dd09a51e69643475f606d30744eb8067db474e85062835f4c"
-    sha256 arm64_tahoe:   "28ecaee75bbc7e1f46acf8cc454dae77756d81b266109babb28c1e1fe8a0651c"
-    sha256 arm64_sequoia: "6e2c4e656162f1c0914dbbe536170a5d77f9b9b6d706136e7040a3dce600ce86"
-    sha256 arm64_linux:   "c4b4b49016aa2d810d0faad8d27c03d2cf6f8601f2ee499c87da4364a751536f"
-    sha256 x86_64_linux:  "30a34eedf7a28ec53ede33db5d60fcb956b23214d7a71f0b9da68b1ba6aa4d97"
+    manifest_sha256 "9a496621a05b733d453e959f386f5fba48942c851f0bb34ac25c53f7c18f9894"
+    sha256 arm64_tahoe:   "f0c102e621c8aa6754c2c063f3bc7cc58252ff9ac67e29166db41a5502eaa3a4"
+    sha256 arm64_sequoia: "a1355a9fdf7f7e234675f2de65bbbd4918f16f40e9d97078ee24398eeeb8ab1e"
+    sha256 arm64_linux:   "9a96cc4311babeea346e05bfb1f636970e1958d19007d163c6f133e007e01544"
+    sha256 x86_64_linux:  "c5e3e74109528f2143d2bc8a139d1c1ee14069e76063240a241738754f471c2f"
   end
 
   option "with-docs", "Enable docs build"
@@ -145,8 +145,8 @@ class SunshineBeta < Formula
   ## @brief Configure build metadata, the Linux compiler, and the glad Python environment.
   def setup_build_environment
     ENV["BRANCH"] = ""
-    ENV["BUILD_VERSION"] = "2026.1121.231041"
-    ENV["COMMIT"] = "575456e02900015e90322ab30864da86d0a09b85"
+    ENV["BUILD_VERSION"] = "2026.1122.155624"
+    ENV["COMMIT"] = "82fe0f063e98fbce69b3274766b081128fa40ee9"
 
     if OS.linux?
       # Use GCC because gcov from llvm cannot handle our paths
