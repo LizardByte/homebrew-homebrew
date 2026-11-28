@@ -43,6 +43,11 @@ class SunshineBeta < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/lizardbyte/homebrew"
+    manifest_sha256 "118b3293d8b11097b7a22533090b17915f3438b3b3e0b0d78ddf5daa1245fedd"
+    sha256 arm64_tahoe:   "370d1ea0e903003e3f11b90a9d860221cf431ee5f0a3924eaca7ff1a28d99fb4"
+    sha256 arm64_sequoia: "d8cc0e71fc58277e118f21eb5a52f888c58b8f4bab5f88237b2e9bb5c9a33e8d"
+    sha256 arm64_linux:   "03b1be8e472324e70653725d74aa32550b3e5a760a669b32bf117f28c6106d4e"
+    sha256 x86_64_linux:  "79f41b35ef400c50016ed11f8309d7723604ff74a256266bccc6f147019e8a09"
   end
 
   option "with-docs", "Enable docs build"
